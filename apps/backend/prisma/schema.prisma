@@ -113,6 +113,10 @@ model User {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   handle          String    @unique @db.Citext
   email           String    @unique @db.Citext
+  /// bcrypt hash — never the plain password, and never returned by the API.
+  /// Nullable so seeded/imported accounts can exist before they set one.
+  passwordHash    String?   @map("password_hash")
+  lastLoginAt     DateTime? @map("last_login_at") @db.Timestamptz(6)
   displayName     String    @map("display_name")
   avatarUrl       String?   @map("avatar_url")
   bio             String?
