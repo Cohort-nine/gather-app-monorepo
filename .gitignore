@@ -1,7 +1,11 @@
 apps/*/node_modules/
 dist/
 .DS_Store
+# Every env file EXCEPT the committed template.
+# `.env` alone would not match `.env.supabase` / `.env.local-docker`.
 .env
+.env.*
+!.env.example
 coverage/
 apps/backend/prisma/generated/
 apps/backend/dev.db

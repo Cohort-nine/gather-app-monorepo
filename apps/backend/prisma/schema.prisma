@@ -1,28 +1,682 @@
+// ============================================================================
+// GATHER — Prisma schema
+//
+// Ported from the PostgreSQL DDL. Same two rules:
+//   - Scores are DERIVED. rsvpStatusEvents + attendance are the ledgers;
+//     userReliability is a rebuildable cache.
+//   - Every score-affecting state change is timestamped relative to event start.
+//
+// PRISMA CAVEATS (see NOTES at bottom + prisma/migrations/*_constraints.sql):
+//   - CHECK constraints, partial indexes, and the connection_edges VIEW cannot
+//     be expressed in schema.prisma. They live in a hand-edited migration.
+//   - Requires the `citext` and `pgcrypto` extensions.
+// ============================================================================
+ 
 generator client {
   provider = "prisma-client-js"
 }
 
+// The connection URL comes from prisma.config.ts (which reads DATABASE_URL via
+// dotenv), so it is deliberately NOT repeated here — defining it in both places
+// is an error in Prisma 7.
 datasource db {
   provider = "postgresql"
 }
-
+ 
+// ============================================================================
+// ENUMS
+// ============================================================================
+ 
+enum ConnectionStatus {
+  pending
+  accepted
+  blocked
+ 
+  @@map("connection_status")
+}
+ 
+enum EventStatus {
+  draft
+  published
+  cancelled
+  completed
+ 
+  @@map("event_status")
+}
+ 
+enum EventVisibility {
+  public
+  unlisted
+  invite_only
+ 
+  @@map("event_visibility")
+}
+ 
+enum RsvpStatus {
+  going
+  waitlisted
+  cancelled
+  declined
+ 
+  @@map("rsvp_status")
+}
+ 
+enum AttendanceOutcome {
+  attended
+  no_show
+  excused
+ 
+  @@map("attendance_outcome")
+}
+ 
+enum AttendanceMethod {
+  host_marked
+  self_checkin
+  qr_scan
+  auto
+ 
+  @@map("attendance_method")
+}
+ 
+enum InviteStatus {
+  sent
+  accepted
+  declined
+  expired
+ 
+  @@map("invite_status")
+}
+ 
+enum AttendeeVisibility {
+  everyone
+  connections_and_mutuals
+  host_only
+  nobody
+ 
+  @@map("attendee_visibility")
+}
+ 
+enum NotificationChannel {
+  push
+  email
+  sms
+  in_app
+ 
+  @@map("notification_channel")
+}
+ 
+// ============================================================================
+// IDENTITY
+// ============================================================================
+ 
+model User {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  handle          String    @unique @db.Citext
+  email           String    @unique @db.Citext
+  displayName     String    @map("display_name")
+  avatarUrl       String?   @map("avatar_url")
+  bio             String?
+  homeCity        String?   @map("home_city")
+  homeLat         Float?    @map("home_lat")
+  homeLng         Float?    @map("home_lng")
+  joinedAt        DateTime  @default(now()) @map("joined_at") @db.Timestamptz(6)
+  emailVerifiedAt DateTime? @map("email_verified_at") @db.Timestamptz(6)
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  deletedAt       DateTime? @map("deleted_at") @db.Timestamptz(6)
+ 
+  privacySettings   UserPrivacySettings?
+  reliability       AttendeeReliability?
+  hostReputation    HostReputation?
+  connectionsAsLow  Connection[]         @relation("ConnectionLow")
+  connectionsAsHigh Connection[]         @relation("ConnectionHigh")
+  connectionsSent   Connection[]         @relation("ConnectionRequester")
+  blocksMade        UserBlock[]          @relation("Blocker")
+  blocksReceived    UserBlock[]          @relation("Blocked")
+  hostedSeries      EventSeries[]
+  hostedEvents      Event[]              @relation("EventHost")
+  cohostOf          EventCohost[]
+  rsvps             Rsvp[]
+  rsvpStatusEvents  RsvpStatusEvent[]    @relation("RsvpStatusActor")
+  attendance        Attendance[]         @relation("AttendanceUser")
+  attendanceMarked  Attendance[]         @relation("AttendanceMarker")
+  invitesReceived   EventInvite[]        @relation("InviteInvitee")
+  invitesSent       EventInvite[]        @relation("InviteInviter")
+  notifications     Notification[]
+  notificationPrefs NotificationPreference[]
+  badges            UserBadge[]
+  ratingsReceived   HostRating[]            @relation("HostRated")
+  ratingsGiven      HostRating[]            @relation("HostRater")
+  reportsFiled      Report[]                @relation("ReportFiler")
+  reportsAbout      Report[]                @relation("ReportSubject")
+ 
+  @@map("users")
+}
+ 
+/// Split out so settings can grow without bloating the hot users table.
+model UserPrivacySettings {
+  userId String @id @map("user_id") @db.Uuid
+ 
+  /// Can others see this user listed as a past/current attendee?
+  attendeeVisibility AttendeeVisibility @default(connections_and_mutuals) @map("attendee_visibility")
+  /// Can this user be surfaced as a "mutual connection" on a listing?
+  surfaceAsMutual    Boolean            @default(true) @map("surface_as_mutual")
+  /// Numeric reliability visible to hosts, or only the band?
+  showReliabilityToHosts Boolean        @default(true) @map("show_reliability_to_hosts")
+  discoverableByHandle   Boolean        @default(true) @map("discoverable_by_handle")
+  updatedAt              DateTime       @updatedAt @map("updated_at") @db.Timestamptz(6)
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@map("user_privacy_settings")
+}
+ 
+// ============================================================================
+// SOCIAL GRAPH
+// ============================================================================
+ 
+/// Symmetric edge stored once, canonically ordered (userLow < userHigh),
+/// so a friendship can never be double-inserted in reverse.
+/// CHECK (user_low < user_high) is applied in raw SQL.
+model Connection {
+  userLow     String           @map("user_low") @db.Uuid
+  userHigh    String           @map("user_high") @db.Uuid
+  requestedBy String           @map("requested_by") @db.Uuid
+  status      ConnectionStatus @default(pending)
+  requestedAt DateTime         @default(now()) @map("requested_at") @db.Timestamptz(6)
+  acceptedAt  DateTime?        @map("accepted_at") @db.Timestamptz(6)
+ 
+  low       User @relation("ConnectionLow", fields: [userLow], references: [id], onDelete: Cascade)
+  high      User @relation("ConnectionHigh", fields: [userHigh], references: [id], onDelete: Cascade)
+  requester User @relation("ConnectionRequester", fields: [requestedBy], references: [id], onDelete: Cascade)
+ 
+  @@id([userLow, userHigh])
+  // connections_low_idx / connections_high_idx are partial indexes
+  // (WHERE status = 'accepted') created in the raw SQL migration. They are
+  // deliberately NOT declared here — Prisma would try to recreate them as
+  // full indexes on every `migrate dev`.
+  @@map("connections")
+}
+ 
+/// Directed, always-honored safety edge. Separate from Connection because a
+/// block must survive independently of friendship state.
+model UserBlock {
+  blockerId String   @map("blocker_id") @db.Uuid
+  blockedId String   @map("blocked_id") @db.Uuid
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ 
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+ 
+  @@id([blockerId, blockedId])
+  @@map("user_blocks")
+}
+ 
+/// Convenience view: one row per direction, for simple JOIN-based traversal.
+/// Created by raw SQL migration; Prisma reads it only.
+// NOTE: the connection_edges VIEW is created in the raw SQL migration, not
+// here. Prisma's `views` support is preview-only and generates no DDL, so the
+// view is defined in constraints.sql and queried with $queryRaw.
+ 
+// ============================================================================
+// EVENTS
+// ============================================================================
+ 
 model Category {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  createdAt DateTime @default(now()) @map("created_at")
-  items     Item[]
-
+  id        Int    @id @default(autoincrement()) @db.SmallInt
+  slug      String @unique
+  name      String
+  sortOrder Int    @default(0) @map("sort_order") @db.SmallInt
+ 
+  events Event[]
+ 
   @@map("categories")
 }
-
-model Item {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(100)
-  description String   @db.Text
-  categoryId  Int      @map("category_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  category    Category @relation(fields: [categoryId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-
-  @@index([categoryId])
-  @@map("items")
+ 
+/// Optional series identity for recurring events (a host's monthly potluck).
+model EventSeries {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hostId      String   @map("host_id") @db.Uuid
+  title       String
+  slug        String   @unique
+  description String?
+  /// Freeform ("monthly", "weekly", cron, etc.)
+  cadence     String?
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ 
+  host   User    @relation(fields: [hostId], references: [id], onDelete: Restrict)
+  events Event[]
+ 
+  @@index([hostId])
+  @@map("event_series")
 }
+ 
+model Event {
+  id         String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hostId     String  @map("host_id") @db.Uuid
+  seriesId   String? @map("series_id") @db.Uuid
+  categoryId Int?    @map("category_id") @db.SmallInt
+ 
+  title       String
+  slug        String  @unique
+  description String?
+ 
+  // Timing. UTC + IANA zone so recurring/local display stays correct.
+  startsAt      DateTime  @map("starts_at") @db.Timestamptz(6)
+  endsAt        DateTime? @map("ends_at") @db.Timestamptz(6)
+  timezone      String    @default("UTC")
+  rsvpClosesAt  DateTime? @map("rsvp_closes_at") @db.Timestamptz(6)
+ 
+  // Place. Denormalized: Gather events are one-off gatherings, not venues.
+  isOnline     Boolean @default(false) @map("is_online")
+  onlineUrl    String? @map("online_url")
+  placeName    String? @map("place_name")
+  addressLine1 String? @map("address_line1")
+  addressLine2 String? @map("address_line2")
+  city         String?
+  region       String?
+  postalCode   String? @map("postal_code")
+  countryCode  String? @map("country_code") @db.Char(2)
+  lat          Float?
+  lng          Float?
+ 
+  /// Exact address hidden until RSVP confirmed — trust/safety pattern for
+  /// house-hosted gatherings.
+  hideExactAddressUntilRsvp Boolean @default(true) @map("hide_exact_address_until_rsvp")
+ 
+  capacity         Int?
+  allowWaitlist    Boolean @default(true) @map("allow_waitlist")
+  allowGuests      Boolean @default(false) @map("allow_guests")
+  maxGuestsPerRsvp Int     @default(0) @map("max_guests_per_rsvp") @db.SmallInt
+ 
+  /// Minimum attendee reliability (0.00–1.00) required for auto-promotion off
+  /// the waitlist. 0.00 = anyone.
+  waitlistReliabilityFloor Decimal @default(0.00) @map("waitlist_reliability_floor") @db.Decimal(4, 2)
+ 
+  visibility EventVisibility @default(public)
+  status     EventStatus     @default(draft)
+ 
+  publishedAt        DateTime? @map("published_at") @db.Timestamptz(6)
+  cancelledAt        DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  cancellationReason String?   @map("cancellation_reason")
+  completedAt        DateTime? @map("completed_at") @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+ 
+  host     User         @relation("EventHost", fields: [hostId], references: [id], onDelete: Restrict)
+  series   EventSeries? @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  category Category?    @relation(fields: [categoryId], references: [id])
+ 
+  cohosts          EventCohost[]
+  tags             EventTag[]
+  rsvps            Rsvp[]
+  rsvpStatusEvents RsvpStatusEvent[]
+  attendance       Attendance[]
+  invites          EventInvite[]
+  ratings          HostRating[]
+  reports          Report[]
+  notifications    Notification[]
+ 
+  // Only the host index is declared here. The other four are PARTIAL indexes
+  // created in the raw SQL migration and deliberately omitted from this file:
+  //   events_series_idx    (series_id, starts_at) WHERE series_id IS NOT NULL
+  //   events_browse_idx    (starts_at)  WHERE status='published' AND visibility='public'
+  //   events_category_idx  (category_id, starts_at) WHERE status='published'
+  //   events_geo_idx       (lat, lng)   WHERE status='published'
+  // Declaring them here would make Prisma recreate them as full indexes.
+  @@index([hostId, startsAt(sort: Desc)])
+  @@map("events")
+}
+ 
+/// Hosts run multiple groups and may share hosting duties.
+model EventCohost {
+  eventId        String   @map("event_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  canEdit        Boolean  @default(true) @map("can_edit")
+  canManageRsvps Boolean  @default(true) @map("can_manage_rsvps")
+  addedAt        DateTime @default(now()) @map("added_at") @db.Timestamptz(6)
+ 
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@id([eventId, userId])
+  @@map("event_cohosts")
+}
+ 
+model EventTag {
+  eventId String @map("event_id") @db.Uuid
+  tag     String @db.Citext
+ 
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+ 
+  @@id([eventId, tag])
+  @@index([tag])
+  @@map("event_tags")
+}
+ 
+// ============================================================================
+// RSVPs + the ledger that makes reliability computable
+// ============================================================================
+ 
+model Rsvp {
+  id      String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId String     @map("event_id") @db.Uuid
+  userId  String     @map("user_id") @db.Uuid
+  status  RsvpStatus @default(going)
+ 
+  guestCount Int @default(0) @map("guest_count") @db.SmallInt
+  /// Only meaningful while status = 'waitlisted'.
+  waitlistPosition Int? @map("waitlist_position")
+ 
+  firstRespondedAt DateTime  @default(now()) @map("first_responded_at") @db.Timestamptz(6)
+  statusChangedAt  DateTime  @default(now()) @map("status_changed_at") @db.Timestamptz(6)
+  cancelledAt      DateTime? @map("cancelled_at") @db.Timestamptz(6)
+  /// Moved waitlisted -> going.
+  promotedAt       DateTime? @map("promoted_at") @db.Timestamptz(6)
+  noteToHost       String?   @map("note_to_host")
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+ 
+  event        Event             @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  statusEvents RsvpStatusEvent[]
+  attendance   Attendance?
+ 
+  /// One RSVP row per person per event. Status changes mutate this row;
+  /// the history lives in RsvpStatusEvent.
+  @@unique([eventId, userId])
+  @@index([eventId, status])
+  @@index([userId, createdAt(sort: Desc)])
+  // Unique partial index on (eventId, waitlistPosition) WHERE waitlisted is
+  // applied in raw SQL — Prisma can't express partial uniques.
+  @@map("rsvps")
+}
+ 
+/// APPEND-ONLY. The table reliability is computed from.
+/// hoursBeforeEvent is stored (not derived at read time) so a later edit to the
+/// event's start time can't retroactively change someone's score.
+model RsvpStatusEvent {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  rsvpId  String @map("rsvp_id") @db.Uuid
+  eventId String @map("event_id") @db.Uuid
+  /// Who performed the change (self, host, or system-on-behalf).
+  actorId String? @map("actor_id") @db.Uuid
+ 
+  fromStatus RsvpStatus? @map("from_status")
+  toStatus   RsvpStatus  @map("to_status")
+ 
+  /// Snapshotted at write time. Negative = after the event started.
+  hoursBeforeEvent Decimal? @map("hours_before_event") @db.Decimal(10, 2)
+  /// Snapshot of events.starts_at when this row was written.
+  eventStartsAtSnapshot DateTime? @map("event_starts_at_snapshot") @db.Timestamptz(6)
+ 
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+ 
+  rsvp  Rsvp  @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  actor User? @relation("RsvpStatusActor", fields: [actorId], references: [id], onDelete: SetNull)
+ 
+  @@index([rsvpId, createdAt])
+  @@index([eventId, createdAt])
+  @@map("rsvp_status_events")
+}
+ 
+/// Ledger of what actually happened. One row per (event, user).
+model Attendance {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId String @map("event_id") @db.Uuid
+  userId  String @map("user_id") @db.Uuid
+  rsvpId  String @unique @map("rsvp_id") @db.Uuid
+ 
+  outcome  AttendanceOutcome
+  method   AttendanceMethod  @default(host_marked)
+  guestsBrought Int          @default(0) @map("guests_brought") @db.SmallInt
+ 
+  checkedInAt DateTime? @map("checked_in_at") @db.Timestamptz(6)
+  markedById  String?   @map("marked_by_id") @db.Uuid
+  markedAt    DateTime  @default(now()) @map("marked_at") @db.Timestamptz(6)
+  notes       String?
+ 
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user     User  @relation("AttendanceUser", fields: [userId], references: [id], onDelete: Cascade)
+  rsvp     Rsvp  @relation(fields: [rsvpId], references: [id], onDelete: Cascade)
+  markedBy User? @relation("AttendanceMarker", fields: [markedById], references: [id], onDelete: SetNull)
+ 
+  @@unique([eventId, userId])
+  @@index([userId, markedAt(sort: Desc)])
+  @@index([eventId, outcome])
+  @@map("attendance")
+}
+ 
+/// DERIVED CACHE. Rebuildable in full from rsvpStatusEvents + attendance.
+/// Never authored by hand.
+model AttendeeReliability {
+  userId String @id @map("user_id") @db.Uuid
+ 
+  /// 0.00–1.00.
+  score Decimal @default(1.00) @db.Decimal(4, 2)
+ 
+  rsvpCount              Int @default(0) @map("rsvp_count")
+  attendedCount          Int @default(0) @map("attended_count")
+  noShowCount            Int @default(0) @map("no_show_count")
+  excusedCount           Int @default(0) @map("excused_count")
+  /// Cancelled with reasonable notice — does not penalize the same as a ghost.
+  cancelledWithNoticeCount Int @default(0) @map("cancelled_with_notice_count")
+  /// Cancelled inside the notice window.
+  cancelledLateCount     Int @default(0) @map("cancelled_late_count")
+ 
+  /// Coarse band shown when the user hides the numeric score.
+  band String? @db.VarChar(20)
+ 
+  computedAt DateTime @default(now()) @map("computed_at") @db.Timestamptz(6)
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@index([score(sort: Desc)])
+  @@map("attendee_reliability")
+}
+
+/// DERIVED CACHE for the hosting side. Rebuilt from hostRatings + the events
+/// this user hosted (cancellations, completion rate).
+model HostReputation {
+  userId String @id @map("user_id") @db.Uuid
+
+  /// 0.00–5.00, the average of hostRatings.
+  score Decimal @default(0.00) @db.Decimal(4, 2)
+
+  eventsHosted    Int @default(0) @map("events_hosted")
+  eventsCompleted Int @default(0) @map("events_completed")
+  eventsCancelled Int @default(0) @map("events_cancelled")
+  ratingCount     Int @default(0) @map("rating_count")
+
+  computedAt DateTime @default(now()) @map("computed_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([score(sort: Desc)])
+  @@map("host_reputation")
+}
+
+/// An attendee rating a host after an event. Source of truth for
+/// hostReputation.score — one rating per rater per event.
+model HostRating {
+  id      String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId String @map("event_id") @db.Uuid
+  hostId  String @map("host_id") @db.Uuid
+  raterId String @map("rater_id") @db.Uuid
+
+  /// 1–5. CHECK enforced in raw SQL.
+  rating  Int     @db.SmallInt
+  comment String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  host  User  @relation("HostRated", fields: [hostId], references: [id], onDelete: Cascade)
+  rater User  @relation("HostRater", fields: [raterId], references: [id], onDelete: Cascade)
+
+  /// One rating per person per event.
+  @@unique([eventId, raterId])
+  @@index([hostId, createdAt(sort: Desc)])
+  @@map("host_ratings")
+}
+ 
+// ============================================================================
+// INVITES + NOTIFICATIONS
+// ============================================================================
+ 
+model EventInvite {
+  id        String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventId   String @map("event_id") @db.Uuid
+  inviterId String @map("inviter_id") @db.Uuid
+  /// Null when invited by email before the person has an account.
+  inviteeId    String? @map("invitee_id") @db.Uuid
+  inviteeEmail String? @map("invitee_email") @db.Citext
+ 
+  status InviteStatus @default(sent)
+  token  String       @unique
+  message String?
+ 
+  sentAt      DateTime  @default(now()) @map("sent_at") @db.Timestamptz(6)
+  respondedAt DateTime? @map("responded_at") @db.Timestamptz(6)
+  expiresAt   DateTime? @map("expires_at") @db.Timestamptz(6)
+ 
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  inviter User  @relation("InviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee User? @relation("InviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+ 
+  @@unique([eventId, inviteeId])
+  @@index([eventId, status])
+  @@index([inviteeId, status])
+  @@map("event_invites")
+}
+ 
+model Notification {
+  id      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId  String              @map("user_id") @db.Uuid
+  /// Most notifications are about an event; some (connection requests) aren't.
+  eventId String?             @map("event_id") @db.Uuid
+  channel NotificationChannel @default(in_app)
+ 
+  /// e.g. "rsvp_confirmed", "waitlist_promoted", "event_cancelled".
+  type    String
+  title   String
+  body    String?
+  /// Free-form payload (event_id, rsvp_id, deep link, etc.).
+  payload Json?
+ 
+  readAt    DateTime? @map("read_at") @db.Timestamptz(6)
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  event Event? @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+/// Per-user opt-in matrix: which notification types go out on which channel.
+/// Absence of a row means "use the app default" — don't backfill every combo.
+model NotificationPreference {
+  userId  String              @map("user_id") @db.Uuid
+  type    String
+  channel NotificationChannel
+
+  enabled   Boolean  @default(true)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+// ============================================================================
+// BADGES  (earned markers — "hosted 10 events", "never no-showed")
+// ============================================================================
+
+model Badge {
+  id          Int     @id @default(autoincrement()) @db.SmallInt
+  slug        String  @unique
+  name        String
+  description String?
+  iconUrl     String? @map("icon_url")
+
+  users UserBadge[]
+
+  @@map("badges")
+}
+
+model UserBadge {
+  userId  String @map("user_id") @db.Uuid
+  badgeId Int    @map("badge_id") @db.SmallInt
+
+  awardedAt DateTime @default(now()) @map("awarded_at") @db.Timestamptz(6)
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@id([userId, badgeId])
+  @@map("user_badges")
+}
+
+// ============================================================================
+// TRUST & SAFETY
+// ============================================================================
+
+/// A report filed against a user or an event. Exactly one subject should be
+/// set — CHECK enforced in raw SQL.
+model Report {
+  id         String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  reporterId String @map("reporter_id") @db.Uuid
+
+  subjectUserId  String? @map("subject_user_id") @db.Uuid
+  subjectEventId String? @map("subject_event_id") @db.Uuid
+
+  /// e.g. "harassment", "spam", "unsafe_venue", "no_show_abuse".
+  type    String
+  details String?
+
+  /// null = unreviewed. Set when a moderator closes it out.
+  resolvedAt     DateTime? @map("resolved_at") @db.Timestamptz(6)
+  resolutionNote String?   @map("resolution_note")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  reporter     User   @relation("ReportFiler", fields: [reporterId], references: [id], onDelete: Cascade)
+  subjectUser  User?  @relation("ReportSubject", fields: [subjectUserId], references: [id], onDelete: Cascade)
+  subjectEvent Event? @relation(fields: [subjectEventId], references: [id], onDelete: Cascade)
+
+  @@index([subjectUserId, createdAt(sort: Desc)])
+  @@index([subjectEventId, createdAt(sort: Desc)])
+  @@index([resolvedAt])
+  @@map("reports")
+}
+ 
+// ============================================================================
+// NOTES — what Prisma can't express (put these in a raw SQL migration)
+// ============================================================================
+//
+// CHECK constraints:
+//   users_handle_format, connections_canonical_order,
+//   connections_accepted_has_time, user_blocks_not_self,
+//   events_capacity_positive, events_end_after_start, events_rsvp_before_start,
+//   events_online_has_url, events_cancelled_has_time,
+//   rsvps_guest_count_sane, rsvps_cancelled_has_time, rsvps_waitlist_position
+//
+// Partial indexes (Prisma emits full indexes; replace them if size matters):
+//   connections_low_idx / connections_high_idx  WHERE status = 'accepted'
+//   events_series_idx                           WHERE series_id IS NOT NULL
+//   events_browse_idx                           WHERE status='published' AND visibility='public'
+//   events_category_idx / events_geo_idx        WHERE status = 'published'
+//   rsvps_waitlist_order_idx  UNIQUE (event_id, waitlist_position) WHERE status='waitlisted'
+//
+// View: connection_edges must be CREATE VIEW'd manually. Prisma `views` is a
+// preview feature and does not generate DDL.
+//
+// Workflow: `prisma migrate dev --create-only`, then append the raw SQL above
+// to the generated migration before applying.
+// ============================================================================
