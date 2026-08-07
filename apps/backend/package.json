@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "node --watch server/server.js",
     "start": "node server/server.js",
+    "test": "vitest run",
     "db:up": "docker compose -f ../../docker-compose.yml up -d postgres",
     "db:down": "docker compose -f ../../docker-compose.yml down",
     "db:logs": "docker compose -f ../../docker-compose.yml logs -f postgres",
@@ -40,6 +41,7 @@
     "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "vitest": "^2.1.9"
   }
 }
