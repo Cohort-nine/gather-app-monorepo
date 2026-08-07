@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import GatherIntro from './GatherIntro';
 import GatherLogo from './GatherLogo';
+import { useAuth } from '../context/AuthContext.jsx';
 import './Home.css';
 
 /**
@@ -19,12 +21,13 @@ export default function Home() {
   const videoRef = useRef(null);
   const logoSlotRef = useRef(null);
   const [introDone, setIntroDone] = useState(false);
+  const { user, logout } = useAuth();
 
   return (
     <div className="home">
       <nav className="home__nav">
         <div className="home__nav-side">
-          <a href="#browse">Browse</a>
+          <Link to="/events">Browse</Link>
           <a href="#host">Host</a>
         </div>
 
@@ -39,7 +42,13 @@ export default function Home() {
         </div>
 
         <div className="home__nav-side home__nav-side--end">
-          <a href="#signin">Sign in</a>
+          {user ? (
+            <button type="button" className="home__nav-link-button" onClick={logout}>
+              Sign out ({user.handle})
+            </button>
+          ) : (
+            <Link to="/login">Sign in</Link>
+          )}
         </div>
       </nav>
 
@@ -84,18 +93,11 @@ export default function Home() {
             Block parties, potlucks, hobby meetups. See who you know before you go, and give your
             host a headcount they can actually plan around.
           </p>
-          <a className="home__cta" href="#browse">
+          <Link className="home__cta" to="/events">
             Find something near you
-          </a>
+          </Link>
         </div>
       </header>
-
-      <main>
-        <section className="home__section" id="browse">
-          <h2>Browse</h2>
-          <p>Replace with real content.</p>
-        </section>
-      </main>
 
       <GatherIntro
         videoRef={videoRef}

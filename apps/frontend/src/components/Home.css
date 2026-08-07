@@ -52,6 +52,20 @@
   color: #fff;
 }
 
+.home__nav-link-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: rgba(255, 255, 255, 0.82);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.home__nav-link-button:hover {
+  color: #fff;
+}
+
 /* Destination for the flying logo. Keeps its space from first paint so
    nothing shifts when the logo lands — only opacity changes. */
 .home__logo-slot {
