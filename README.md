@@ -1,18 +1,18 @@
-# Full Stack Application Template
+# Gather
 
-This repository is a student-friendly starter template for a full stack application using:
+Gather is a small-gatherings events app: hosts publish events (block parties,
+potlucks, hobby meetups), people RSVP, and a reliability score built from
+attendance history feeds back into who gets auto-promoted off a waitlist.
 
-- React
-- Vite
-- JavaScript
-- Node.js
-- Express
-- PostgreSQL
-- Prisma ORM
-- REST API endpoints
-- Docker Compose
+Stack:
+
+- React + React Router + Vite (frontend)
+- Node.js + Express (backend API)
+- PostgreSQL + Prisma ORM (with hand-written SQL for constraints/views Prisma
+  can't express)
+- Docker Compose for local Postgres
+- Doppler for shared secrets
 - Git and GitHub
-- Environment variables with `.env`
 
 ## Project structure
 
@@ -27,13 +27,23 @@ This repository is a student-friendly starter template for a full stack applicat
     │   ├── index.html
     │   ├── vite.config.js
     │   └── src/
-    │       ├── App.jsx
-    │       ├── main.jsx
+    │       ├── App.jsx                # routes
+    │       ├── main.jsx                # BrowserRouter + AuthProvider
     │       ├── styles.css
     │       ├── api/
-    │       │   └── items.js
+    │       │   ├── client.js           # fetch wrapper, token storage
+    │       │   ├── auth.js
+    │       │   └── events.js
+    │       ├── context/
+    │       │   └── AuthContext.jsx     # session state, login/signup/logout
+    │       ├── pages/
+    │       │   ├── EventsPage.jsx      # browse + RSVP
+    │       │   ├── LoginPage.jsx
+    │       │   └── SignupPage.jsx
     │       └── components/
-    │           └── ItemList.jsx
+    │           ├── Home.jsx            # marketing homepage
+    │           ├── GatherIntro.jsx     # dot-gather intro animation
+    │           └── GatherLogo.jsx
     └── backend/
         ├── package.json
         ├── .env.example
@@ -43,30 +53,45 @@ This repository is a student-friendly starter template for a full stack applicat
         │   ├── migrations/
         │   └── seed.js
         ├── database/
-        │   ├── schema.sql
+        │   ├── schema.sql               # raw SQL mirror of the schema, for teaching
         │   └── seed.sql
         └── server/
             ├── db/
             │   └── prisma.js
+            ├── lib/
+            │   ├── auth.js               # JWT + bcrypt helpers, auth middleware
+            │   └── validateEvent.js
             ├── controllers/
-            │   └── itemController.js
+            │   ├── authController.js
+            │   ├── eventController.js
+            │   └── rsvpController.js
             ├── routes/
-            │   └── items.js
+            │   ├── auth.js
+            │   ├── events.js
+            │   └── index.js
             └── server.js
 ```
 
+## The data model
 
+`apps/backend/prisma/schema.prisma` is the source of truth. Broad strokes:
 
-## Example application
+- **Events** — one-off gatherings with timing, location, capacity, visibility,
+  and an optional recurring series.
+- **RSVPs** — one row per (event, user). Status changes (`going` →
+  `cancelled`, `waitlisted` → `going`, etc.) are also appended to
+  `RsvpStatusEvent`, an append-only ledger. That ledger, plus `Attendance`
+  records, is what reliability scores are computed *from* — the score itself
+  (`AttendeeReliability`) is a rebuildable cache, never hand-edited.
+- **Waitlists** — when an event is full, an RSVP goes to `waitlisted`
+  instead of being rejected. Cancelling a confirmed RSVP auto-promotes the
+  next eligible person, honoring the host's `waitlistReliabilityFloor`.
+- **Social/trust & safety** — connections, blocks, host ratings, reports,
+  badges, notifications.
 
-This template uses two related tables:
-
-- `categories`
-- `items`
-
-The `items` table has a foreign key to `categories`, which gives students a simple example of relational database design.
-
-In Prisma code, the models are named `Category` and `Item`, but the actual PostgreSQL tables are lowercase: `categories` and `items`.
+Some things can't be expressed in `schema.prisma` (CHECK constraints, partial
+indexes, one VIEW) and live in a hand-written SQL migration instead — see the
+`NOTES` block at the bottom of the schema file for the full list.
 
 ## Requirements
 
@@ -76,8 +101,6 @@ Before starting, make sure you have these installed:
 - npm
 - Docker Desktop
 - PostgreSQL client tools if you want to use `psql` commands directly
-
-
 
 ## Environment variables
 
@@ -91,7 +114,15 @@ Example:
 
 ```env
 DATABASE_URL="postgresql://postgres:postgres@localhost:5433/backend-db?schema=public"
+JWT_SECRET="<32+ random characters>"
 PORT=3001
+```
+
+The server refuses to start without `JWT_SECRET` set to at least 32
+characters — generate one with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
 The root `.gitignore` already includes `.env` so it will not be committed.
@@ -222,15 +253,13 @@ To view database logs:
 npm run db:logs
 ```
 
-
-
 ## Backend setup
 
 Open a terminal in `apps/backend` and run:
 
 ```bash
 npm install
-cp .env.example .env
+cp .env.example .env      # then fill in JWT_SECRET
 npm run db:up
 npm run prisma:generate
 npm run prisma:migrate -- --name init
@@ -249,14 +278,27 @@ The backend will run at:
 http://localhost:3001
 ```
 
-Available example REST API endpoints:
+Available REST API endpoints:
 
-- `GET /api/health`
-- `GET /api/categories`
-- `GET /api/items`
-- `POST /api/items`
+- `GET    /api/health`
+- `POST   /api/auth/signup`
+- `POST   /api/auth/login`
+- `POST   /api/auth/logout`
+- `GET    /api/auth/me`                      (auth required)
+- `GET    /api/categories`
+- `GET    /api/events`                        (search/filter/sort/paginate)
+- `GET    /api/events/:id`
+- `POST   /api/events`                        (auth required)
+- `PUT    /api/events/:id`                    (host/cohost only)
+- `DELETE /api/events/:id`                    (host/cohost only)
+- `POST   /api/events/:id/rsvp`               (auth required)
+- `DELETE /api/events/:id/rsvp`               (auth required)
+- `GET    /api/events/:id/rsvps`              (host/cohost only)
+- `POST   /api/events/:id/attendance`         (host/cohost only)
+- `GET    /api/me/rsvps`                      (auth required)
 
-
+Sessions are stateless JWTs. The frontend sends them as
+`Authorization: Bearer <token>`.
 
 ## Frontend setup
 
@@ -273,7 +315,16 @@ The frontend will run at:
 http://localhost:5173
 ```
 
+Routes:
 
+- `/` — homepage (intro animation + hero video)
+- `/events` — browse published events, RSVP if signed in
+- `/login`, `/signup` — auth
+
+Session state lives in `AuthContext` (`apps/frontend/src/context/AuthContext.jsx`),
+backed by a JWT in `localStorage`. `apps/frontend/src/api/` holds the fetch
+wrappers — `client.js` attaches the token and normalizes error handling,
+`auth.js` and `events.js` are the endpoint-specific calls.
 
 ## How to run `schema.sql`
 
@@ -293,8 +344,6 @@ This executes:
 database/schema.sql
 ```
 
-
-
 ## How to run `seed.sql`
 
 Run this after `schema.sql` if you are following the raw SQL setup path.
@@ -311,8 +360,6 @@ This executes:
 database/seed.sql
 ```
 
-
-
 ## Prisma workflow
 
 This template uses the current Prisma 7 setup:
@@ -321,7 +368,9 @@ This template uses the current Prisma 7 setup:
 - `schema.prisma` defines the models
 - `@prisma/adapter-pg` connects Prisma Client to PostgreSQL at runtime
 - `prisma-client-js` keeps the generated client plain JavaScript-friendly for this class template
-- Prisma maps `Category` and `Item` to lowercase PostgreSQL tables so students can query `categories` and `items` directly in `psql`
+- A few constructs Prisma can't express (CHECK constraints, partial indexes,
+  the `connection_edges` view) live in a hand-edited raw SQL migration instead
+  — see the `NOTES` block at the bottom of `schema.prisma`
 
 Useful Prisma commands from `apps/backend`:
 
@@ -332,8 +381,6 @@ npm run prisma:studio
 npm run db:seed
 npm run db:reset
 ```
-
-
 
 ### When you want to change the database schema
 
@@ -358,7 +405,25 @@ Example:
 - If you add a new column or model:
 - `npm run prisma:migrate -- --name add-user-table`
 
+## Tests
 
+Backend business logic (event validation, password/token handling, RSVP and
+waitlist behavior) has unit tests under `apps/backend/tests`, run with
+[Vitest](https://vitest.dev). They mock the Prisma client, so they don't need
+a running database.
+
+```bash
+cd apps/backend
+npm test
+```
+
+There is no frontend test suite yet.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push and pull request: it installs
+and runs the backend test suite, and builds the frontend to catch compile
+errors.
 
 ## Helpful backend scripts
 
@@ -367,6 +432,7 @@ From `apps/backend`:
 ```bash
 npm run dev
 npm run start
+npm test
 npm run db:up
 npm run db:down
 npm run db:logs
@@ -387,27 +453,21 @@ npm run sql:seed
 
 Suggested student workflow:
 
-1. Create a new GitHub repository from this template.
-2. Clone the repository.
-3. Create a new branch for your work.
-4. Commit your changes regularly.
-5. Push your branch to GitHub.
-
-
+1. Create a new branch for your work.
+2. Commit your changes regularly.
+3. Push your branch to GitHub and open a PR.
 
 ## Suggested startup order
 
 1. In `apps/backend`, run `npm install`.
 2. In `apps/frontend`, run `npm install`.
-3. In `apps/backend`, copy `.env.example` to `.env`.
+3. In `apps/backend`, copy `.env.example` to `.env` and set `JWT_SECRET`.
 4. In `apps/backend`, run `npm run db:up`.
 5. In `apps/backend`, run `npm run prisma:generate`.
 6. In `apps/backend`, run `npm run prisma:migrate -- --name init`.
 7. In `apps/backend`, run `npm run db:seed`.
 8. In `apps/backend`, run `npm run dev`.
 9. In `apps/frontend`, run `npm run dev`.
-
-
 
 ## Notes for students
 
@@ -416,4 +476,7 @@ Suggested student workflow:
 - Keep secrets in `.env` files only.
 - Use Prisma models to represent your database tables.
 - Use REST routes in Express to connect the frontend to PostgreSQL.
-
+- `apps/backend/server/lib/validateEvent.js` mirrors the database's CHECK
+  constraints in JavaScript. If you add a new constraint to the schema, add
+  the matching check there too — the goal is a readable 400 instead of a raw
+  Postgres error reaching the client.
