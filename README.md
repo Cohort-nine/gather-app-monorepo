@@ -96,6 +96,106 @@ PORT=3001
 
 The root `.gitignore` already includes `.env` so it will not be committed.
 
+## Secrets management (Doppler)
+
+`.env` works fine on one machine. It stops working the moment four people need
+the same Supabase password — someone ends up pasting a connection string into
+Slack, and now it lives in a chat log forever.
+
+[Doppler](https://www.doppler.com) stores the secrets once, in the cloud, and
+injects them as environment variables at run time. Nobody copies anything.
+
+**Doppler is optional.** Every `npm run` script still reads `.env` if you
+haven't set Doppler up, so a teammate is never blocked. The `:doppler` variants
+below are the same commands with secrets injected instead.
+
+### First-time setup (one person, once)
+
+1. Create a free account at [doppler.com](https://dashboard.doppler.com/register)
+2. Create a project named `gather-app` — it comes with `dev`, `stg`, and `prd` configs
+3. Install the CLI and log in:
+
+```bash
+# macOS
+brew install gnupg && brew install dopplerhq/cli/doppler
+
+# Windows (PowerShell or CMD)
+winget install doppler.doppler
+
+# Windows (Git Bash) — install to your home bin
+mkdir -p $HOME/bin
+curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sh -s -- --install-path $HOME/bin
+
+doppler login
+```
+
+> **Git Bash users:** `doppler login` needs a real TTY. If it hangs, run
+> `winpty doppler login` instead. This is a known CLI issue on MINGW64.
+
+4. Push the secrets you already have in `.env` up to Doppler:
+
+```bash
+cd apps/backend
+doppler setup            # picks project `gather-app`, config `dev` from doppler.yaml
+npm run doppler:import   # uploads .env  -> Doppler
+```
+
+5. Invite your teammates from the Doppler dashboard (Team → Invite)
+
+### Per-teammate setup (everyone else)
+
+```bash
+# install the CLI (see above), then:
+doppler login
+cd apps/backend
+doppler setup            # doppler.yaml preselects the right project + config
+npm run dev:doppler
+```
+
+No `.env` file needed. Nobody sends anybody a password.
+
+### Daily use
+
+```bash
+npm run dev:doppler                # backend with secrets injected
+npm run prisma:migrate:doppler     # migrations
+npm run db:seed:doppler            # seed
+npm run doppler:secrets            # list what's currently set
+```
+
+Any other script works with the same wrapper:
+
+```bash
+doppler run -- npm run <script-name>
+```
+
+### How it interacts with `.env`
+
+`dotenv` does not overwrite variables that already exist in the environment, so
+when you run through Doppler, **Doppler's values win** and a stale local `.env`
+can't silently override them. Once your team is fully on Doppler you can delete
+`.env` entirely.
+
+### What's committed vs. what isn't
+
+| File | Committed? | Contains |
+| --- | --- | --- |
+| `apps/backend/doppler.yaml` | yes | project + config *names* only |
+| `apps/backend/.env.example` | yes | placeholder keys, no values |
+| `apps/backend/.env` | **no** | real secrets, gitignored |
+
+`doppler.yaml` holds no secret material. Committing it is what makes
+`doppler setup` a single keystroke for the next person.
+
+### Deploying
+
+For Render, Railway, Vercel, Fly, and Supabase, set the environment variables in
+that platform's dashboard, or connect Doppler's
+[sync integration](https://docs.doppler.com/docs/integrations) so a change in
+Doppler propagates automatically. Production should use a
+[service token](https://docs.doppler.com/docs/service-tokens) scoped to the
+`prd` config, never a personal login.
+
 ## How to create the PostgreSQL database
 
 This project uses Docker Compose for PostgreSQL.

@@ -1,0 +1,22 @@
+# ---------------------------------------------------------------------------
+# Doppler project binding for the Gather backend.
+#
+# This file contains NO secrets — only the names of the Doppler project and
+# config to pull them from. It is safe to commit, and committing it is the
+# point: it means a teammate runs `doppler setup` and gets the right config
+# without anyone telling them which one to pick.
+#
+# Secrets live in Doppler, never in this repo. See the "Secrets management"
+# section of the root README.md for setup.
+#
+# Doppler scopes config to a DIRECTORY, so run `doppler setup` from
+# apps/backend, not from the repo root.
+# ---------------------------------------------------------------------------
+
+# `dev` is the SHARED development config — everyone on the team pulls the same
+# values from it. Doppler also creates a `dev_personal` branch config per user;
+# that one is for local overrides only, and pointing this file at it would mean
+# each teammate silently gets a different database.
+setup:
+  - project: gather-app
+    config: dev
