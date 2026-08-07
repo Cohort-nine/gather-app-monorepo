@@ -1,0 +1,107 @@
+import { useRef, useState } from 'react';
+import GatherIntro from './GatherIntro';
+import GatherLogo from './GatherLogo';
+import './Home.css';
+
+/**
+ * Homepage: nav + hero video + the intro overlay.
+ *
+ * This is an EXAMPLE of how to wire GatherIntro up. Change the copy, the nav
+ * links, the layout, all of it — the only parts that matter are:
+ *
+ *   1. a ref on the <video>            -> passed to GatherIntro
+ *   2. a ref on the navbar logo slot   -> passed to GatherIntro
+ *   3. onDone -> flip some state so the nav logo and hero copy appear
+ *
+ * Everything else is yours.
+ */
+export default function Home() {
+  const videoRef = useRef(null);
+  const logoSlotRef = useRef(null);
+  const [introDone, setIntroDone] = useState(false);
+
+  return (
+    <div className="home">
+      <nav className="home__nav">
+        <div className="home__nav-side">
+          <a href="#browse">Browse</a>
+          <a href="#host">Host</a>
+        </div>
+
+        {/* The logo flies into this slot. It reserves its space from the first
+            paint, so nothing shifts when the logo lands. */}
+        <div
+          className="home__logo-slot"
+          ref={logoSlotRef}
+          style={{ opacity: introDone ? 1 : 0 }}
+        >
+          <GatherLogo />
+        </div>
+
+        <div className="home__nav-side home__nav-side--end">
+          <a href="#signin">Sign in</a>
+        </div>
+      </nav>
+
+      <header className="home__hero">
+        {/*
+          autoplay + the soft class are in MARKUP, not set from JS. The browser
+          starts fetching during HTML parse. Calling .play() from an effect puts
+          the video behind React hydration and webfont loading, which is a
+          visible delay.
+
+          Paths are root-absolute because Vite serves everything in public/ at
+          the site root. public/media/hero-1080.mp4 -> /media/hero-1080.mp4
+        */}
+        <video
+          ref={videoRef}
+          className="home__video gi-video--soft"
+          autoPlay
+          playsInline
+          muted
+          loop
+          preload="auto"
+          poster="/media/hero-poster.webp"
+          aria-hidden="true"
+        >
+          {/* First source whose type is supported AND whose media query matches
+              wins. WebM leads: 42% smaller here at higher measured quality.
+              Safari falls through to mp4. 720p is the catch-all, so phones
+              never pull the 1080p file. */}
+          <source src="/media/hero-1080.webm" type="video/webm" media="(min-width: 768px)" />
+          <source src="/media/hero-1080.mp4" type="video/mp4" media="(min-width: 768px)" />
+          <source src="/media/hero-720.webm" type="video/webm" />
+          <source src="/media/hero-720.mp4" type="video/mp4" />
+        </video>
+
+        <div className={`home__copy ${introDone ? 'home__copy--in' : ''}`}>
+          <h1>
+            Small gatherings.
+            <br />
+            People who show up.
+          </h1>
+          <p>
+            Block parties, potlucks, hobby meetups. See who you know before you go, and give your
+            host a headcount they can actually plan around.
+          </p>
+          <a className="home__cta" href="#browse">
+            Find something near you
+          </a>
+        </div>
+      </header>
+
+      <main>
+        <section className="home__section" id="browse">
+          <h2>Browse</h2>
+          <p>Replace with real content.</p>
+        </section>
+      </main>
+
+      <GatherIntro
+        videoRef={videoRef}
+        logoSlotRef={logoSlotRef}
+        onDone={() => setIntroDone(true)}
+      />
+    </div>
+  );
+}

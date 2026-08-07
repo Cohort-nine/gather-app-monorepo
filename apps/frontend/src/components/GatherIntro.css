@@ -1,0 +1,188 @@
+/* =========================================================================
+   GATHER — intro overlay
+   All selectors are prefixed gi- to stay out of the way of whatever the rest
+   of the team builds. Nothing here targets a bare element or a generic class.
+   ========================================================================= */
+
+.gi-stage {
+  /* Read by the engine so the sampled glyphs and the painted wordmark can
+     never disagree about the font. */
+  --gi-wordmark-font: 'Google Sans', 'Product Sans', 'Poppins', system-ui, sans-serif;
+}
+
+/* Scroll lock while the overlay is up. */
+body.gi-locked {
+  overflow: hidden;
+}
+
+.gi-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  /* Transparent on purpose — the hero video plays UNDERNEATH, so there is
+     only ever one video decoding on the page. */
+  background: transparent;
+  animation: gi-overlay-out 600ms ease forwards;
+  animation-play-state: paused;
+}
+
+.gi-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* Starts near-black so the first dots read against nothing, then lifts as the
+   crowd assembles — the footage emerges at the same pace the dots do.
+   Transition duration is set from JS to match the arrival window. */
+.gi-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, rgba(11, 13, 15, 0.68) 0%, rgba(11, 13, 15, 0.94) 100%),
+    linear-gradient(to bottom, rgba(11, 13, 15, 0.86), rgba(11, 13, 15, 0.96));
+  opacity: 1;
+  will-change: opacity;
+}
+
+.gi-scrim--lifting {
+  /* The footage is the point. Contrast for GATHER comes from the painted
+     vignette, which is shaped to the text instead of dimming the whole frame. */
+  opacity: 0.24;
+}
+
+/* Dots AND the wordmark live in this one buffer.
+   The single tight drop-shadow stops individual dots dissolving into
+   similar-toned footage. A second, wider halo used to sit here and stacked
+   with the vignette — three darkening passes on the same pixels, which read
+   as murk. */
+.gi-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.38));
+  will-change: opacity, filter;
+}
+
+/* Fixed, not absolute: it animates to the navbar slot's viewport rect without
+   ever changing parent. See the FLIP note in GatherIntro.jsx. */
+.gi-logo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 104px;
+  height: 104px;
+  margin: -52px 0 0 -52px;
+  /* Sits above the wordmark, which is centred in the stage. */
+  transform: translateY(calc(-50% - 40px));
+  color: #fff;
+  transform-origin: center center;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+.gi-logo svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.gi-logo--pop {
+  animation: gi-logo-pop 780ms cubic-bezier(0.18, 0.9, 0.25, 1) forwards;
+}
+
+@keyframes gi-logo-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(calc(-50% - 40px)) scale(0.62);
+  }
+  55% {
+    opacity: 1;
+    transform: translateY(calc(-50% - 40px)) scale(1.035);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(calc(-50% - 40px)) scale(1);
+  }
+}
+
+@keyframes gi-overlay-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* ===================== EFFECTS TOGGLE ===================== */
+
+.gi-toggle {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 120;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 13px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  background: rgba(11, 13, 15, 0.55);
+  backdrop-filter: blur(10px);
+  color: rgba(255, 255, 255, 0.62);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.42;
+  transition: opacity 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.gi-toggle:hover,
+.gi-toggle:focus-visible {
+  opacity: 1;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.gi-toggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.gi-toggle__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  transition: opacity 0.25s;
+}
+
+.gi-toggle[aria-pressed='false'] .gi-toggle__dot {
+  opacity: 0.28;
+}
+
+/* ===================== HERO VIDEO STATES ===================== */
+
+/* Focus pull. The footage sits soft behind the dots so white reads cleanly
+   over a busy sky, then racks in as the intro releases. The 1.06 scale hides
+   the transparent edge bleed blur() creates. */
+.gi-video--soft {
+  filter: blur(9px) saturate(0.95);
+  transform: scale(1.06);
+}
+
+/* blur() on a full-screen video is real fill rate on a low-end phone — the
+   scrim carries legibility there instead. */
+@media (max-width: 767px) {
+  .gi-video--soft {
+    filter: none;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gi-logo--pop,
+  .gi-overlay {
+    animation: none;
+  }
+}

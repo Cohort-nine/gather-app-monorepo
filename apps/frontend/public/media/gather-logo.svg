@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="none" role="img" aria-labelledby="gather-logo-title">
+  <title id="gather-logo-title">Gather</title>
+
+  <!--
+    GATHER — primary mark
+    =========================================================================
+    Six people arriving on one point. The same idea the homepage intro
+    animates, frozen at the moment everyone has landed.
+
+    Uses currentColor throughout, so it takes the colour of whatever it sits
+    in: white in the navbar, ink on light backgrounds, no second file needed.
+    Just set `color` on the parent (or `fill` on the <svg>).
+
+    Geometry is on a strict 60° radial grid with a 22px orbit and a 9px hub —
+    that ratio is what keeps it legible down to 16px favicon size, where the
+    ring reads as a container rather than dissolving into the satellites.
+    =========================================================================
+  -->
+
+  <!-- Orbit. Thin enough to recede, present enough to close the composition. -->
+  <circle cx="32" cy="32" r="27" stroke="currentColor" stroke-width="2.5" opacity="0.4"/>
+
+  <!-- The gathering point. -->
+  <circle cx="32" cy="32" r="9" fill="currentColor"/>
+
+  <!-- Six arrivals, 60° apart. -->
+  <circle cx="32"    cy="10"    r="4.6" fill="currentColor"/>
+  <circle cx="51.05" cy="21"    r="4.6" fill="currentColor"/>
+  <circle cx="51.05" cy="43"    r="4.6" fill="currentColor"/>
+  <circle cx="32"    cy="54"    r="4.6" fill="currentColor"/>
+  <circle cx="12.95" cy="43"    r="4.6" fill="currentColor"/>
+  <circle cx="12.95" cy="21"    r="4.6" fill="currentColor"/>
+</svg>
