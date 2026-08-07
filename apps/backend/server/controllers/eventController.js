@@ -296,20 +296,16 @@ export async function getEvent(req, res, next) {
 
 /** POST /api/events */
 export async function createEvent(req, res, next) {
-  const { errors, data } = validateEventPayload(req.body);
+  // The host is whoever is signed in — never whatever the client sent. Trusting
+  // a hostId from the request body would let anyone create events in someone
+  // else's name.
+  const { errors, data } = validateEventPayload({ ...req.body, hostId: req.user.id });
 
   if (errors.length) {
     return res.status(400).json({ message: "Validation failed", errors });
   }
 
   try {
-    // Foreign keys are checked up front so the user gets a clear 400 rather
-    // than a database-level foreign key error surfacing as a 500.
-    const host = await prisma.user.findUnique({ where: { id: data.hostId } });
-    if (!host) {
-      return res.status(400).json({ message: "hostId does not match an existing user" });
-    }
-
     if (data.categoryId) {
       const category = await prisma.category.findUnique({ where: { id: data.categoryId } });
       if (!category) {
@@ -361,7 +357,10 @@ export async function updateEvent(req, res, next) {
     return res.status(404).json({ message: "Event not found" });
   }
 
-  const { errors, data } = validateEventPayload(req.body, { partial: true });
+  // hostId is stripped: ownership transfer is not something a plain edit should
+  // be able to do, even for the real host.
+  const { hostId: _ignored, ...body } = req.body;
+  const { errors, data } = validateEventPayload(body, { partial: true });
 
   if (errors.length) {
     return res.status(400).json({ message: "Validation failed", errors });

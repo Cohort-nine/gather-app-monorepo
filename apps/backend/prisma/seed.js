@@ -16,7 +16,13 @@
 // ============================================================================
 
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import prisma from "../server/db/prisma.js";
+
+// Every seeded account shares one password so you can log in as anyone during
+// a demo. This is seed data for a local/dev database only — real accounts get
+// their hash from the signup endpoint.
+const DEMO_PASSWORD = "gather-demo-2026";
 
 // ---------------------------------------------------------------------------
 // Time helpers — everything is relative to "now" so the seed never goes stale.
@@ -121,12 +127,16 @@ const PEOPLE = [
 
 async function seedUsers() {
   const users = {};
+  // Hash once, reuse for all twelve — bcrypt at 12 rounds is slow by design.
+  const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 12);
 
   for (const [i, p] of PEOPLE.entries()) {
     const user = await prisma.user.create({
       data: {
         handle: p.handle,
         email: `${p.handle}@example.com`,
+        passwordHash,
+        lastLoginAt: daysFromNow(-2),
         displayName: p.displayName,
         bio: p.bio ?? null,
         homeCity: p.city,
@@ -1089,6 +1099,9 @@ async function main() {
         `attended=${r.attendedCount} noShow=${r.noShowCount} lateCancel=${r.cancelledLateCount}`
     );
   }
+
+  console.log(`\nAll seeded accounts share the password: ${DEMO_PASSWORD}`);
+  console.log("Log in with any handle, e.g. maya_ortiz (host) or jonah_webb (unreliable).");
 
   console.log("\nRow counts:", {
     users: await prisma.user.count(),
