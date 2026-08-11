@@ -1,4 +1,22 @@
-const API_BASE_URL = "http://localhost:3001/api";
+// Where the API lives. Set VITE_API_URL at build time — Vite inlines env vars
+// into the bundle, so this is baked in when `npm run build` runs, not read at
+// runtime. On Vercel that means setting it in the project's Environment
+// Variables and redeploying, not editing a file on the server.
+//
+// The localhost fallback keeps `npm run dev` working with no setup. It is only
+// a sane default for local development; a production build with VITE_API_URL
+// unset would ship a bundle pointing every user at their own machine, so the
+// warning below makes that loud instead of mysterious.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001/api";
+
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+  console.warn(
+    "[gather] VITE_API_URL is not set — this production build is pointing at " +
+      "http://localhost:3001/api and every request will fail. Set VITE_API_URL " +
+      "in your hosting provider's environment variables and redeploy."
+  );
+}
+
 const TOKEN_KEY = "gather.token";
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY);

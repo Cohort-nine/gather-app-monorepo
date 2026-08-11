@@ -2,13 +2,16 @@ import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
 import apiRoutes from "./routes/index.js";
+import { buildCorsOptions, describeCorsPolicy } from "./lib/cors.js";
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
 
-app.use(cors());
+// Allowed origins come from CORS_ORIGIN — see server/lib/cors.js. Locally this
+// falls back to Vite's dev server so nothing needs configuring to run the app.
+app.use(cors(buildCorsOptions()));
 app.use(express.json());
 
 app.use("/api", apiRoutes);
@@ -50,5 +53,6 @@ app.use((err, _req, res, _next) => {
 
 app.listen(port, () => {
   console.log(`Backend listening on http://localhost:${port}`);
+  console.log(describeCorsPolicy());
   console.log(`Try: http://localhost:${port}/api/events?sort=soonest`);
 });
