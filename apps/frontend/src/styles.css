@@ -79,41 +79,6 @@ textarea {
   cursor: pointer;
 }
 
-.item-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: 12px;
-}
-
-.item-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
-  background: #f8fafc;
-}
-
-.item-card__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.item-card__header h3 {
-  margin: 0;
-}
-
-.item-card__header span {
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #dbeafe;
-  color: #1d4ed8;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
 .status {
   color: #475569;
 }
@@ -131,8 +96,16 @@ textarea {
     padding: 20px;
   }
 
-  .item-card__header {
-    align-items: flex-start;
-    flex-direction: column;
+  /* 44px is the standard minimum comfortable touch target — the desktop
+     10-12px paddings above measure out smaller than that. */
+  .form input,
+  .form select,
+  .form textarea,
+  .form button {
+    min-height: 44px;
+  }
+
+  .form button {
+    width: 100%;
   }
 }

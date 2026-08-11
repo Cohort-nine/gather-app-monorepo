@@ -17,7 +17,8 @@ export default function EventsPage() {
   const [events, setEvents] = useState([]);
   const [categories, setCategories] = useState([]);
   const [filters, setFilters] = useState({ search: "", category: "", sort: "soonest" });
-  const [status, setStatus] = useState("Loading events...");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [rsvpMessage, setRsvpMessage] = useState({});
 
   useEffect(() => {
@@ -27,13 +28,12 @@ export default function EventsPage() {
   }, []);
 
   useEffect(() => {
-    setStatus("Loading events...");
+    setLoading(true);
+    setError("");
     fetchEvents(filters)
-      .then((res) => {
-        setEvents(res.data);
-        setStatus(res.data.length ? "" : "No events matched your filters.");
-      })
-      .catch((err) => setStatus(err.message));
+      .then((res) => setEvents(res.data))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, [filters]);
 
   function handleFilterChange(event) {
@@ -83,46 +83,60 @@ export default function EventsPage() {
         </form>
       </section>
 
-      {status ? <p className="status">{status}</p> : null}
+      {error ? <p className="status status--error">{error}</p> : null}
 
-      <ul className="event-list">
-        {events.map((event) => (
-          <li key={event.id} className="event-card">
-            <div className="event-card__header">
-              <h3>{event.title}</h3>
-              {event.category ? <span>{event.category.name}</span> : null}
-            </div>
+      {loading ? (
+        <ul className="event-list" aria-hidden="true" aria-label="Loading events">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <li key={i} className="event-card event-card--skeleton">
+              <div className="skeleton-line skeleton-line--title" />
+              <div className="skeleton-line" />
+              <div className="skeleton-line skeleton-line--short" />
+            </li>
+          ))}
+        </ul>
+      ) : events.length === 0 && !error ? (
+        <p className="status">No events matched your filters.</p>
+      ) : (
+        <ul className="event-list">
+          {events.map((event) => (
+            <li key={event.id} className="event-card">
+              <div className="event-card__header">
+                <h3>{event.title}</h3>
+                {event.category ? <span>{event.category.name}</span> : null}
+              </div>
 
-            <p className="event-card__meta">
-              {dateFormatter.format(new Date(event.startsAt))}
-              {" · "}
-              {event.isOnline ? "Online" : event.city || "Location TBD"}
-              {" · "}
-              hosted by {event.host.displayName}
-            </p>
+              <p className="event-card__meta">
+                {dateFormatter.format(new Date(event.startsAt))}
+                {" · "}
+                {event.isOnline ? "Online" : event.city || "Location TBD"}
+                {" · "}
+                hosted by {event.host.displayName}
+              </p>
 
-            <p className="event-card__meta">
-              {event.isFull
-                ? "Full"
-                : event.spotsLeft === null
-                  ? `${event.goingCount} going`
-                  : `${event.spotsLeft} spot(s) left`}
-            </p>
+              <p className="event-card__meta">
+                {event.isFull
+                  ? "Full"
+                  : event.spotsLeft === null
+                    ? `${event.goingCount} going`
+                    : `${event.spotsLeft} spot(s) left`}
+              </p>
 
-            {user ? (
-              <button type="button" onClick={() => handleRsvp(event.id)}>
-                RSVP
-              </button>
-            ) : (
-              <Link to="/login">Sign in to RSVP</Link>
-            )}
+              {user ? (
+                <button type="button" onClick={() => handleRsvp(event.id)}>
+                  RSVP
+                </button>
+              ) : (
+                <Link to="/login">Sign in to RSVP</Link>
+              )}
 
-            {rsvpMessage[event.id] ? (
-              <p className="status">{rsvpMessage[event.id]}</p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              {rsvpMessage[event.id] ? (
+                <p className="status">{rsvpMessage[event.id]}</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      )}
     </main>
   );
 }
