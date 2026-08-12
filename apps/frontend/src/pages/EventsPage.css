@@ -30,7 +30,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px 12px;
+  flex-wrap: wrap;
 }
 
 .event-card__header h3 {
@@ -61,8 +62,55 @@
   cursor: pointer;
 }
 
+/* ===================== LOADING SKELETON ===================== */
+
+.event-card--skeleton {
+  display: grid;
+  gap: 10px;
+}
+
+.skeleton-line {
+  height: 14px;
+  border-radius: 6px;
+  width: 100%;
+  background: linear-gradient(90deg, #e5e7eb 25%, #f0f1f3 37%, #e5e7eb 63%);
+  background-size: 400% 100%;
+  animation: skeleton-shimmer 1.4s ease infinite;
+}
+
+.skeleton-line--title {
+  height: 20px;
+  width: 55%;
+}
+
+.skeleton-line--short {
+  width: 35%;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+/* Shimmer is purely decorative — respect the user's OS-level motion setting
+   instead of forcing it on everyone. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line {
+    animation: none;
+  }
+}
+
 @media (max-width: 640px) {
   .events-filters {
     grid-template-columns: 1fr;
+  }
+
+  .event-card button {
+    width: 100%;
+    min-height: 44px;
   }
 }
