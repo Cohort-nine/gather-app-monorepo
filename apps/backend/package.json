@@ -3,9 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch server/server.js",
     "start": "node server/server.js",
+    "postinstall": "prisma generate",
     "test": "vitest run",
     "db:up": "docker compose -f ../../docker-compose.yml up -d postgres",
     "db:down": "docker compose -f ../../docker-compose.yml down",
