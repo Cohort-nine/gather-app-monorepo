@@ -1,0 +1,126 @@
+/* Event create/edit form. Leans on .page / .panel / .form / .status from
+   styles.css and only adds what the form itself needs. */
+
+.event-form__intro {
+  margin: 0 0 1.5rem;
+  opacity: 0.75;
+}
+
+.event-form h2 {
+  margin: 2rem 0 0.25rem;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.event-form h2:first-of-type {
+  margin-top: 0.5rem;
+}
+
+/* Side-by-side on wide screens, stacked on phones. Dates especially read
+   better as a pair — start and end belong together. */
+.event-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.event-form__row label {
+  min-width: 0;
+}
+
+/* Checkboxes read as "box then label", not the stacked label-above-input the
+   base .form style applies to text fields. */
+.event-form__check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.event-form__check input {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.event-form__required {
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0.55;
+  margin-left: 0.4rem;
+}
+
+.event-form small,
+.event-form__hint {
+  display: block;
+  font-size: 0.85rem;
+  opacity: 0.6;
+  margin-top: 0.3rem;
+}
+
+.event-form__hint {
+  margin: -0.4rem 0 0.6rem 1.9rem;
+}
+
+.event-form__errors {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.event-form__errors li + li {
+  margin-top: 0.25rem;
+}
+
+.event-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.event-form__secondary {
+  background: transparent;
+  border: 1px solid currentColor;
+}
+
+/* Destructive, so it should not look like the thing you click by reflex. */
+.event-form__danger {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid #e5484d;
+  color: #e5484d;
+}
+
+.event-form__danger:hover:not(:disabled) {
+  background: #e5484d;
+  color: #fff;
+}
+
+.event-form__cancel {
+  opacity: 0.7;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 600px) {
+  .event-form__danger {
+    margin-left: 0;
+  }
+
+  .event-form__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-form__cancel {
+    text-align: center;
+    padding-top: 0.5rem;
+  }
+}

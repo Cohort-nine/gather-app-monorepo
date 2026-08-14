@@ -55,7 +55,15 @@ export default function EventsPage() {
     <main className="page">
       <section className="panel">
         <p className="eyebrow">Gather</p>
-        <h1>Browse gatherings</h1>
+        <div className="events-heading">
+          <h1>Browse gatherings</h1>
+          {user ? (
+            <span className="events-heading__links">
+              <Link to="/my-events">Your events</Link>
+              <Link to="/events/new">Host a gathering</Link>
+            </span>
+          ) : null}
+        </div>
 
         <form className="events-filters" onSubmit={(e) => e.preventDefault()}>
           <input
@@ -122,7 +130,11 @@ export default function EventsPage() {
                     : `${event.spotsLeft} spot(s) left`}
               </p>
 
-              {user ? (
+              {/* Hosting your own event isn't an RSVP — the API rejects it, so
+                  offer the useful action instead of a button that 409s. */}
+              {user && event.host.id === user.id ? (
+                <Link to={`/events/${event.id}/edit`}>Edit your event</Link>
+              ) : user ? (
                 <button type="button" onClick={() => handleRsvp(event.id)}>
                   RSVP
                 </button>
