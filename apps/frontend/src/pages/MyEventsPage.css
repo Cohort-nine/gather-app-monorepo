@@ -1,0 +1,96 @@
+/* Host dashboard. Reuses .event-list / .event-card from EventsPage.css so the
+   two lists look like the same app. */
+
+.my-events__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.my-events__heading h1 {
+  margin: 0;
+}
+
+.my-events__new {
+  font-weight: 600;
+}
+
+.my-events__notice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.my-events__dismiss {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: #2563eb;
+  text-decoration: underline;
+  cursor: pointer;
+  width: auto;
+}
+
+/* Status has to be readable without relying on color alone — that's the
+   difference between a label and a decoration for anyone colorblind. */
+.my-events__status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.my-events__status--draft {
+  color: #4b5563;
+  background: #f3f4f6;
+}
+
+.my-events__status--published {
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.my-events__status--cancelled {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.my-events__status--completed {
+  color: #6b7280;
+  background: #f9fafb;
+}
+
+.my-events__actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.my-events__empty {
+  text-align: center;
+}
+
+.my-events__empty h2 {
+  margin-top: 0;
+}
+
+.my-events__empty p {
+  color: #6b7280;
+  max-width: 42ch;
+  margin: 0 auto 1.25rem;
+}
+
+@media (max-width: 600px) {
+  .my-events__heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

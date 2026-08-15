@@ -29,7 +29,7 @@ const SORT_OPTIONS = {
 /**
  * GET /api/events
  *
- * Supports:  ?search=  ?category=  ?city=  ?from=  ?to=  ?includePast=
+ * Supports:  ?search=  ?category=  ?city=  ?from=  ?to=  ?includePast=  ?mine=
  *            ?sort=soonest|latest|newest|title|popular  ?page=  ?limit=
  *
  * This is the endpoint that satisfies the JOIN requirement. One query pulls
@@ -48,10 +48,25 @@ export async function listEvents(req, res, next) {
       from,
       to,
       includePast,
+      mine,
       sort = "soonest",
       page = "1",
       limit = "20"
     } = req.query;
+
+    // ?mine=true switches this from "browse what's public" to "everything I
+    // host". Without it a host can save a draft and never find it again: the
+    // browse filters below hardcode published + public, so an unpublished event
+    // would be reachable only by remembering its URL.
+    //
+    // It requires a session and is scoped to req.user.id — there is deliberately
+    // no ?hostId= parameter, because that would let anyone enumerate another
+    // host's drafts and invite-only events by guessing a UUID.
+    const onlyMine = mine === "true" || mine === "1";
+
+    if (onlyMine && !req.user) {
+      return res.status(401).json({ message: "You must be signed in to list your own events." });
+    }
 
     const pageNum = Math.max(1, Number(page) || 1);
     const perPage = Math.min(50, Math.max(1, Number(limit) || 20));
@@ -65,12 +80,16 @@ export async function listEvents(req, res, next) {
 
     // Build the WHERE clause from fragments. Each ${value} becomes a bound
     // parameter — never string concatenation.
-    const conditions = [
-      Prisma.sql`e.status = 'published'`,
-      Prisma.sql`e.visibility = 'public'`
-    ];
+    const conditions = onlyMine
+      ? // Your own events, whatever their state — drafts and cancelled ones are
+        // exactly the rows a host management view needs to show.
+        [Prisma.sql`e.host_id = ${req.user.id}::uuid`]
+      : [Prisma.sql`e.status = 'published'`, Prisma.sql`e.visibility = 'public'`];
 
-    if (!includePast || includePast === "false") {
+    // Past events are hidden by default when browsing, but a host managing their
+    // own events needs to see the ones that already happened — that's where
+    // marking attendance happens.
+    if (!onlyMine && (!includePast || includePast === "false")) {
       conditions.push(Prisma.sql`e.starts_at >= now()`);
     }
     if (search) {
@@ -184,14 +203,24 @@ export async function listEvents(req, res, next) {
     }));
 
     res.json({
-      message: data.length ? "Events retrieved successfully" : "No events matched your filters",
+      message: data.length
+        ? "Events retrieved successfully"
+        : onlyMine
+          ? "You haven't created any events yet"
+          : "No events matched your filters",
       data,
       meta: {
         page: pageNum,
         limit: perPage,
         total,
         totalPages: Math.ceil(total / perPage),
-        filters: { search: search ?? null, category: category ?? null, city: city ?? null, sort }
+        filters: {
+          search: search ?? null,
+          category: category ?? null,
+          city: city ?? null,
+          mine: onlyMine,
+          sort
+        }
       }
     });
   } catch (error) {

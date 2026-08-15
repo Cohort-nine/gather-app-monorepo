@@ -1,0 +1,153 @@
+/* Event create/edit form. Leans on .page / .panel / .form / .status from
+   styles.css and only adds what the form itself needs. */
+
+.event-form__intro {
+  margin: 0 0 1.5rem;
+  color: #6b7280;
+}
+
+.event-form h2 {
+  margin: 2rem 0 0.25rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.event-form h2:first-of-type {
+  margin-top: 0.5rem;
+}
+
+/* Side-by-side on wide screens, stacked on phones. Dates especially read
+   better as a pair — start and end belong together. */
+.event-form__row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.event-form__row label {
+  min-width: 0;
+}
+
+/* Checkboxes read as "box then label", not the stacked label-above-input the
+   base .form style applies to text fields. */
+.event-form__check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+}
+
+.event-form__check input {
+  width: auto;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+/* .form label is display:grid, so a bare <span> would become its own row and
+   the badge would drop under the label text. Wrapping both in one flex row
+   keeps them on the same line. */
+.event-form__label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.event-form__required {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4b5563;
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+
+.event-form small,
+.event-form__hint {
+  display: block;
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 400;
+  margin-top: 0.3rem;
+}
+
+.event-form__hint {
+  margin: -0.4rem 0 0.6rem 1.9rem;
+}
+
+.event-form__errors {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.event-form__errors li + li {
+  margin-top: 0.25rem;
+}
+
+.event-form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+/* .form button sets white-on-blue, so a transparent secondary has to reset the
+   text colour too or it renders white on white. */
+.event-form__secondary {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #374151;
+}
+
+.event-form__secondary:hover:not(:disabled) {
+  border-color: #94a3b8;
+  background: #f9fafb;
+}
+
+/* Destructive, so it should not look like the thing you click by reflex. */
+.event-form__danger {
+  margin-left: auto;
+  background: #ffffff;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+}
+
+.event-form__danger:hover:not(:disabled) {
+  background: #dc2626;
+  color: #ffffff;
+}
+
+.event-form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.event-form__cancel {
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 600px) {
+  .event-form__danger {
+    margin-left: 0;
+  }
+
+  .event-form__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-form__cancel {
+    text-align: center;
+    padding-top: 0.5rem;
+  }
+}
