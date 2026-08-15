@@ -18,3 +18,10 @@ export const rsvpToEvent = (id, payload = {}) =>
 export const cancelRsvp = (id) => apiFetch(`/events/${id}/rsvp`, { method: "DELETE" });
 
 export const fetchMyRsvps = () => apiFetch("/me/rsvps");
+
+export const createEvent = (payload) =>
+  apiFetch("/events", { method: "POST", body: payload });
+ 
+export const updateEvent = (id, payload) =>
+  apiFetch(`/events/${id}`, { method: "PUT", body: payload });
+ 

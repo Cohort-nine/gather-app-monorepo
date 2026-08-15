@@ -89,7 +89,9 @@ export default function EventsPage() {
         {events.map((event) => (
           <li key={event.id} className="event-card">
             <div className="event-card__header">
-              <h3>{event.title}</h3>
+              <h3>
+  <Link to={`/events/${event.id}`}>{event.title}</Link>
+</h3>
               {event.category ? <span>{event.category.name}</span> : null}
             </div>
 
