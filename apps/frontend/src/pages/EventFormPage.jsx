@@ -303,7 +303,9 @@ export default function EventFormPage() {
           <h2>The basics</h2>
 
           <label>
-            Title <span className="event-form__required">required</span>
+            <span className="event-form__label">
+              Title <span className="event-form__required">required</span>
+            </span>
             <input
               name="title"
               value={form.title}
@@ -341,7 +343,9 @@ export default function EventFormPage() {
 
           <div className="event-form__row">
             <label>
-              Starts <span className="event-form__required">required</span>
+              <span className="event-form__label">
+                Starts <span className="event-form__required">required</span>
+              </span>
               <input
                 type="datetime-local"
                 name="startsAt"
@@ -387,7 +391,9 @@ export default function EventFormPage() {
 
           {form.isOnline ? (
             <label>
-              Link <span className="event-form__required">required</span>
+              <span className="event-form__label">
+                Link <span className="event-form__required">required</span>
+              </span>
               <input
                 name="onlineUrl"
                 value={form.onlineUrl}

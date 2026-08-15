@@ -29,8 +29,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  color: inherit;
-  opacity: 0.7;
+  color: #2563eb;
   text-decoration: underline;
   cursor: pointer;
   width: auto;
@@ -50,19 +49,23 @@
 }
 
 .my-events__status--draft {
-  opacity: 0.7;
+  color: #4b5563;
+  background: #f3f4f6;
 }
 
 .my-events__status--published {
-  color: #46a758;
+  color: #15803d;
+  background: #f0fdf4;
 }
 
 .my-events__status--cancelled {
-  color: #e5484d;
+  color: #b91c1c;
+  background: #fef2f2;
 }
 
 .my-events__status--completed {
-  opacity: 0.55;
+  color: #6b7280;
+  background: #f9fafb;
 }
 
 .my-events__actions {
@@ -80,7 +83,7 @@
 }
 
 .my-events__empty p {
-  opacity: 0.75;
+  color: #6b7280;
   max-width: 42ch;
   margin: 0 auto 1.25rem;
 }
