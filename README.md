@@ -72,26 +72,19 @@ Stack:
             └── server.js
 ```
 
-## The data model
+## Notable features
 
-`apps/backend/prisma/schema.prisma` is the source of truth. Broad strokes:
-
-- **Events** — one-off gatherings with timing, location, capacity, visibility,
-  and an optional recurring series.
-- **RSVPs** — one row per (event, user). Status changes (`going` →
-  `cancelled`, `waitlisted` → `going`, etc.) are also appended to
-  `RsvpStatusEvent`, an append-only ledger. That ledger, plus `Attendance`
-  records, is what reliability scores are computed *from* — the score itself
-  (`AttendeeReliability`) is a rebuildable cache, never hand-edited.
-- **Waitlists** — when an event is full, an RSVP goes to `waitlisted`
-  instead of being rejected. Cancelling a confirmed RSVP auto-promotes the
-  next eligible person, honoring the host's `waitlistReliabilityFloor`.
-- **Social/trust & safety** — connections, blocks, host ratings, reports,
-  badges, notifications.
-
-Some things can't be expressed in `schema.prisma` (CHECK constraints, partial
-indexes, one VIEW) and live in a hand-written SQL migration instead — see the
-`NOTES` block at the bottom of the schema file for the full list.
+- Intro animation + marketing homepage with a high-quality canvas animation.
+- Events with full RSVP and waitlist handling (auto-promotion honoring
+  host `waitlistReliabilityFloor`).
+- Attendance tracking and a rebuildable AttendeeReliability score used to
+  influence waitlist ordering.
+- JWT-based authentication (stateless tokens), stored in localStorage on the
+  client and sent as `Authorization: Bearer <token>`.
+- CORS policy configurable via CORS_ORIGIN with single-level wildcard support
+  (e.g. `https://*.vercel.app`) so Vercel preview URLs work.
+- Doppler integration for centralized secret management, with fallback to
+  local `.env` files for single-developer workflows.
 
 ## Requirements
 
@@ -104,28 +97,34 @@ Before starting, make sure you have these installed:
 
 ## Environment variables
 
-All secret values should stay in a `.env` file.
+All secret values should stay in a `.env` file or in your host's environment
+variables (Doppler is recommended for teams). See `apps/backend/.env.example` and
+`apps/frontend/.env.example` for examples.
 
-1. Go to `apps/backend`
-2. Copy `.env.example` to `.env`
-3. Update the values if needed
+Important production variables (examples):
 
-Example:
+- Frontend (Vercel):
+  - VITE_API_BASE_URL=https://<your-backend>.onrender.com/api
+    - Include the `/api` suffix and do NOT include a trailing slash.
+    - This variable is inlined by Vite at build time, so you must set it in
+      Vercel and redeploy the frontend build.
 
-```env
-DATABASE_URL="postgresql://postgres:postgres@localhost:5433/backend-db?schema=public"
-JWT_SECRET="<32+ random characters>"
-PORT=3001
-```
+- Backend (Render):
+  - NODE_ENV=production
+  - DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>?schema=public
+  - JWT_SECRET=<secure random string, >=32 chars>
+  - CORS_ORIGIN=https://<your-vercel-app>.vercel.app,https://*.vercel.app
+    - Use the wildcard to allow Vercel preview branches.
 
-The server refuses to start without `JWT_SECRET` set to at least 32
-characters — generate one with:
+Notes on localhost fallback
 
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
-
-The root `.gitignore` already includes `.env` so it will not be committed.
+- Localhost fallbacks are intentional and normal for development. Files like
+  `apps/frontend/src/api/client.js` use a fallback of `http://localhost:3001/api`
+  so `npm run dev` works without extra setup.
+- In production you should NOT rely on those fallbacks. If `VITE_API_BASE_URL`
+  is unset in a production build the bundled app will point at a localhost
+  address and requests from users' browsers will fail. Set the production
+  env var in Vercel and redeploy.
 
 ## Secrets management (Doppler)
 
@@ -220,12 +219,18 @@ can't silently override them. Once your team is fully on Doppler you can delete
 
 ### Deploying
 
-For Render, Railway, Vercel, Fly, and Supabase, set the environment variables in
-that platform's dashboard, or connect Doppler's
-[sync integration](https://docs.doppler.com/docs/integrations) so a change in
-Doppler propagates automatically. Production should use a
-[service token](https://docs.doppler.com/docs/service-tokens) scoped to the
-`prd` config, never a personal login.
+This project is suitable for hosting the frontend as a static site on Vercel
+and the backend on Render (or similar). Example production setup:
+
+- Frontend (Vercel): set VITE_API_BASE_URL to `https://<your-backend>.onrender.com/api`
+  and redeploy.
+- Backend (Render): set NODE_ENV=production, DATABASE_URL, JWT_SECRET, and
+  CORS_ORIGIN to include your Vercel domain(s) (e.g. `https://gather.vercel.app,https://*.vercel.app`).
+
+If you want I can add the concrete Vercel and Render service URLs here —
+please tell me the exact Vercel domain (e.g. `https://gather.vercel.app`) and
+Render service URL (e.g. `https://gather-backend.onrender.com`) and I'll commit
+them into this README.
 
 ## How to create the PostgreSQL database
 
@@ -473,7 +478,7 @@ Suggested student workflow:
 
 - Keep your backend code inside `apps/backend`.
 - Keep your frontend code inside `apps/frontend`.
-- Keep secrets in `.env` files only.
+- Keep secrets in `.env` files only (or use Doppler for team secrets).
 - Use Prisma models to represent your database tables.
 - Use REST routes in Express to connect the frontend to PostgreSQL.
 - `apps/backend/server/lib/validateEvent.js` mirrors the database's CHECK
