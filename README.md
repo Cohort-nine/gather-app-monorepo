@@ -104,7 +104,7 @@ variables (Doppler is recommended for teams). See `apps/backend/.env.example` an
 Important production variables (examples):
 
 - Frontend (Vercel):
-  - VITE_API_BASE_URL=https://<your-backend>.onrender.com/api
+  - VITE_API_BASE_URL=https://gather-api-uw1k.onrender.com/api
     - Include the `/api` suffix and do NOT include a trailing slash.
     - This variable is inlined by Vite at build time, so you must set it in
       Vercel and redeploy the frontend build.
@@ -113,8 +113,13 @@ Important production variables (examples):
   - NODE_ENV=production
   - DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>?schema=public
   - JWT_SECRET=<secure random string, >=32 chars>
-  - CORS_ORIGIN=https://<your-vercel-app>.vercel.app,https://*.vercel.app
+  - CORS_ORIGIN=https://gather-app-beige.vercel.app,https://*.vercel.app
     - Use the wildcard to allow Vercel preview branches.
+
+Production service URLs (current deployments)
+
+- Frontend (Vercel): https://gather-app-beige.vercel.app
+- Backend (Render): https://gather-api-uw1k.onrender.com
 
 Notes on localhost fallback
 
@@ -222,14 +227,14 @@ can't silently override them. Once your team is fully on Doppler you can delete
 This project is suitable for hosting the frontend as a static site on Vercel
 and the backend on Render (or similar). Example production setup:
 
-- Frontend (Vercel): set VITE_API_BASE_URL to `https://<your-backend>.onrender.com/api`
+- Frontend (Vercel): set VITE_API_BASE_URL to `https://gather-api-uw1k.onrender.com/api`
   and redeploy.
 - Backend (Render): set NODE_ENV=production, DATABASE_URL, JWT_SECRET, and
-  CORS_ORIGIN to include your Vercel domain(s) (e.g. `https://gather.vercel.app,https://*.vercel.app`).
+  CORS_ORIGIN to include your Vercel domain(s) (e.g. `https://gather-app-beige.vercel.app,https://*.vercel.app`).
 
 If you want I can add the concrete Vercel and Render service URLs here —
-please tell me the exact Vercel domain (e.g. `https://gather.vercel.app`) and
-Render service URL (e.g. `https://gather-backend.onrender.com`) and I'll commit
+please tell me the exact Vercel domain (e.g. `https://gather-app-beige.vercel.app`) and
+Render service URL (e.g. `https://gather-api-uw1k.onrender.com`) and I'll commit
 them into this README.
 
 ## How to create the PostgreSQL database
