@@ -228,6 +228,52 @@ export async function listEvents(req, res, next) {
   }
 }
 
+/**
+ * Strip street-level detail from an event unless the viewer has earned it.
+ *
+ * `hideExactAddressUntilRsvp` exists so someone can host in their living room
+ * without publishing their home address to the internet. The browse endpoint
+ * has always honored it by simply never selecting those columns. The detail
+ * endpoint did not — it spread the whole row — so the address was one request
+ * away for anyone with the event id. This closes that.
+ *
+ * Coordinates go too. A street address you can paste into a map is the same
+ * disclosure whether it's spelled out or expressed as lat/lng.
+ *
+ * @param {object}      event   the event row, with cohosts included
+ * @param {string|null} viewerId  req.user?.id — null for anonymous visitors
+ * @param {Array}       rsvps   this event's RSVPs, to check the viewer's own
+ */
+export function applyAddressPrivacy(event, viewerId, rsvps = []) {
+  if (!event.hideExactAddressUntilRsvp) return { ...event, addressHidden: false };
+
+  const isHost = Boolean(viewerId) && event.hostId === viewerId;
+  const isCohost =
+    Boolean(viewerId) && (event.cohosts ?? []).some((c) => c.userId === viewerId);
+
+  // A cancelled or declined RSVP doesn't count — you're not coming, so you
+  // don't need to know where it is.
+  const hasActiveRsvp =
+    Boolean(viewerId) &&
+    rsvps.some((r) => r.userId === viewerId && ["going", "waitlisted"].includes(r.status));
+
+  if (isHost || isCohost || hasActiveRsvp) {
+    return { ...event, addressHidden: false };
+  }
+
+  return {
+    ...event,
+    addressLine1: null,
+    addressLine2: null,
+    postalCode: null,
+    lat: null,
+    lng: null,
+    // Say so explicitly. The UI can then show "address shared after you RSVP"
+    // rather than rendering a blank line that looks like missing data.
+    addressHidden: true
+  };
+}
+
 /** GET /api/events/:id */
 export async function getEvent(req, res, next) {
   const { id } = req.params;
@@ -297,10 +343,15 @@ export async function getEvent(req, res, next) {
         guestCount: r.guestCount
       }));
 
+    // optionalAuth means req.user is present for signed-in visitors and absent
+    // for anonymous ones. Both are valid here — the difference is how much of
+    // the address they get back.
+    const visible = applyAddressPrivacy(event, req.user?.id ?? null, event.rsvps);
+
     res.json({
       message: "Event retrieved successfully",
       data: {
-        ...event,
+        ...visible,
         rsvps: undefined,
         tags: event.tags.map((t) => t.tag),
         goingCount: going.length,
