@@ -42,6 +42,9 @@ export default function NavBar() {
 
           {user ? (
             <>
+              <NavLink to="/my-rsvps" className="nav__link">
+                Your RSVPs
+              </NavLink>
               <NavLink to="/my-events" className="nav__link">
                 Your events
               </NavLink>

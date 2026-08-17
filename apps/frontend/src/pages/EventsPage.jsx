@@ -110,7 +110,11 @@ export default function EventsPage() {
           {events.map((event) => (
             <li key={event.id} className="event-card">
               <div className="event-card__header">
-                <h3>{event.title}</h3>
+                {/* The whole point of the detail page — cards were previously
+                    dead ends with no way through. */}
+                <h3>
+                  <Link to={`/events/${event.id}`}>{event.title}</Link>
+                </h3>
                 {event.category ? <span>{event.category.name}</span> : null}
               </div>
 
@@ -132,15 +136,19 @@ export default function EventsPage() {
 
               {/* Hosting your own event isn't an RSVP — the API rejects it, so
                   offer the useful action instead of a button that 409s. */}
-              {user && event.host.id === user.id ? (
-                <Link to={`/events/${event.id}/edit`}>Edit your event</Link>
-              ) : user ? (
-                <button type="button" onClick={() => handleRsvp(event.id)}>
-                  RSVP
-                </button>
-              ) : (
-                <Link to="/login">Sign in to RSVP</Link>
-              )}
+              <div className="event-card__actions">
+                <Link to={`/events/${event.id}`}>View details</Link>
+
+                {user && event.host.id === user.id ? (
+                  <Link to={`/events/${event.id}/edit`}>Edit your event</Link>
+                ) : user ? (
+                  <button type="button" onClick={() => handleRsvp(event.id)}>
+                    RSVP
+                  </button>
+                ) : (
+                  <Link to="/login">Sign in to RSVP</Link>
+                )}
+              </div>
 
               {rsvpMessage[event.id] ? (
                 <p className="status">{rsvpMessage[event.id]}</p>
