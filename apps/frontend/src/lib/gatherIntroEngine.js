@@ -100,6 +100,23 @@ export function createIntroEngine({ canvas, stage, fontFamily, T = DEFAULT_T, FE
     wordBox.font = `700 ${fontSize}px ${fontFamily}`;
     wordBox.cx = W / 2;
     wordBox.cy = H / 2;
+
+    // The logo needs to clear the top of the actual rendered glyphs, and a
+    // fixed pixel offset in CSS can't know that — fontSize (and therefore cap
+    // height) scales with viewport width, so a gap tuned for a phone overlaps
+    // on a wide desktop where fontSize hits its 172px ceiling. measureText's
+    // actualBoundingBoxAscent asks the browser for the real answer, for the
+    // font that's actually loaded, instead of guessing a font-metric ratio.
+    ctx.save();
+    ctx.font = wordBox.font;
+    if ('letterSpacing' in ctx) {
+      ctx.letterSpacing = `${(-0.045 * fontSize).toFixed(2)}px`;
+    }
+    const metrics = ctx.measureText('GATHER');
+    ctx.restore();
+
+    const capTop = metrics.actualBoundingBoxAscent || fontSize * 0.8;
+    stage.style.setProperty('--gi-wordmark-cap-top', `${Math.ceil(capTop)}px`);
   }
 
   /**

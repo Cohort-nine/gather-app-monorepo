@@ -76,8 +76,12 @@ body.gi-locked {
   width: 104px;
   height: 104px;
   margin: -52px 0 0 -52px;
-  /* Sits above the wordmark, which is centred in the stage. */
-  transform: translateY(calc(-50% - 40px));
+  /* Sits above the wordmark, which is centred in the stage. --gi-wordmark-cap-top
+     is set from JS to the ACTUAL measured top of the "GATHER" glyphs (it scales
+     with viewport width, so a fixed px gap here would clear it on a phone and
+     collide with it on a wide desktop where the wordmark hits its font-size
+     ceiling). The extra 20px is breathing room past that measured edge. */
+  transform: translateY(calc(-50% - var(--gi-wordmark-cap-top, 96px) - 20px));
   color: #fff;
   transform-origin: center center;
   will-change: transform, opacity;
@@ -99,15 +103,15 @@ body.gi-locked {
 @keyframes gi-logo-pop {
   0% {
     opacity: 0;
-    transform: translateY(calc(-50% - 40px)) scale(0.62);
+    transform: translateY(calc(-50% - var(--gi-wordmark-cap-top, 96px) - 20px)) scale(0.62);
   }
   55% {
     opacity: 1;
-    transform: translateY(calc(-50% - 40px)) scale(1.035);
+    transform: translateY(calc(-50% - var(--gi-wordmark-cap-top, 96px) - 20px)) scale(1.035);
   }
   100% {
     opacity: 1;
-    transform: translateY(calc(-50% - 40px)) scale(1);
+    transform: translateY(calc(-50% - var(--gi-wordmark-cap-top, 96px) - 20px)) scale(1);
   }
 }
 
