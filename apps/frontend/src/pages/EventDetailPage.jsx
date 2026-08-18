@@ -44,6 +44,7 @@ export default function EventDetailPage() {
   const [error, setError] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [working, setWorking] = useState(false);
+  const [justConfirmed, setJustConfirmed] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -63,10 +64,24 @@ export default function EventDetailPage() {
     setActionMessage("");
     try {
       const res = await rsvpToEvent(id);
-      setActionMessage(res.message);
+      const status = res.data.rsvp.status;
+
+      // A small identity nudge, not a lecture — only for a confirmed spot,
+      // and only once we actually know their standing.
+      const encouragement =
+        status === "going" && user?.reliability
+          ? " Showing up like this is what keeps your reliability score strong."
+          : "";
+      setActionMessage(`${res.message}${encouragement}`);
+
       // Refetch rather than patching state by hand: RSVPing can change the
       // attendee list, the spot count, and whether you can see the address.
       await load();
+
+      if (status === "going") {
+        setJustConfirmed(true);
+        setTimeout(() => setJustConfirmed(false), 650);
+      }
     } catch (err) {
       setActionMessage(err.message);
     } finally {
@@ -213,7 +228,7 @@ export default function EventDetailPage() {
 
           <div>
             <dt>Spots</dt>
-            <dd>
+            <dd className={!event.isFull && event.spotsLeft !== null && event.spotsLeft <= 3 ? "text-urgent" : ""}>
               {event.capacity === null
                 ? `${event.goingCount} going · no limit`
                 : event.isFull
@@ -267,7 +282,11 @@ export default function EventDetailPage() {
             </Link>
           ) : myRsvpStatus ? (
             <>
-              <span className="event-detail__yourstatus">
+              <span
+                className={`event-detail__yourstatus ${
+                  myRsvpStatus === "going" && justConfirmed ? "confirm-pulse" : ""
+                }`}
+              >
                 {myRsvpStatus === "going"
                   ? "You're going"
                   : `You're #${myWaitlist.position} on the waitlist`}

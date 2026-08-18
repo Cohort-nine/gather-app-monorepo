@@ -20,10 +20,25 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  // signup/login return a trimmed publicUser() with no reliability/reputation
+  // data — fine for most of the app, but the nav badge needs the full profile
+  // immediately rather than waiting for a reload to trigger the /auth/me
+  // hydration above. The trimmed user still goes in first so nothing renders
+  // blank while this second call is in flight.
+  async function hydrateFullProfile() {
+    try {
+      const full = await authApi.fetchMe();
+      setUser(full.data);
+    } catch {
+      /* Non-fatal — the trimmed user from signup/login is still usable. */
+    }
+  }
+
   async function signup(payload) {
     const res = await authApi.signup(payload);
     setToken(res.data.token);
     setUser(res.data.user);
+    hydrateFullProfile();
     return res.data.user;
   }
 
@@ -31,6 +46,7 @@ export function AuthProvider({ children }) {
     const res = await authApi.login(payload);
     setToken(res.data.token);
     setUser(res.data.user);
+    hydrateFullProfile();
     return res.data.user;
   }
 

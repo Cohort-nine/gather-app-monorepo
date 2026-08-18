@@ -83,6 +83,16 @@
   margin-top: 0.75rem;
 }
 
+.event-card__confirmed {
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.event-card__confirmed--waitlist {
+  color: #d97706;
+  font-weight: 600;
+}
+
 @media (max-width: 600px) {
   .event-card__actions button {
     min-height: 44px;

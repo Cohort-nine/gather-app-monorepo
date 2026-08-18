@@ -20,6 +20,8 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [rsvpMessage, setRsvpMessage] = useState({});
+  const [rsvpStatus, setRsvpStatus] = useState({});
+  const [justConfirmed, setJustConfirmed] = useState(null);
 
   useEffect(() => {
     fetchCategories()
@@ -45,7 +47,32 @@ export default function EventsPage() {
     setRsvpMessage((current) => ({ ...current, [eventId]: "Saving..." }));
     try {
       const res = await rsvpToEvent(eventId);
-      setRsvpMessage((current) => ({ ...current, [eventId]: res.message }));
+      const status = res.data.rsvp.status;
+      setRsvpStatus((current) => ({ ...current, [eventId]: status }));
+
+      // Patched locally rather than refetched: the list endpoint doesn't
+      // return "did I RSVP" per event, so a refetch wouldn't even show this
+      // confirmation — and the response already told us exactly what changed.
+      if (status === "going") {
+        setEvents((current) =>
+          current.map((event) => {
+            if (event.id !== eventId) return event;
+            const spotsLeft = event.spotsLeft === null ? null : Math.max(0, event.spotsLeft - 1);
+            return { ...event, goingCount: event.goingCount + 1, spotsLeft, isFull: spotsLeft === 0 };
+          })
+        );
+
+        setJustConfirmed(eventId);
+        setTimeout(() => setJustConfirmed((current) => (current === eventId ? null : current)), 650);
+      }
+
+      // A small identity nudge, not a lecture — only for confirmed RSVPs, and
+      // only once we actually know their standing.
+      const encouragement =
+        status === "going" && user?.reliability
+          ? " Showing up like this is what keeps your reliability score strong."
+          : "";
+      setRsvpMessage((current) => ({ ...current, [eventId]: `${res.message}${encouragement}` }));
     } catch (err) {
       setRsvpMessage((current) => ({ ...current, [eventId]: err.message }));
     }
@@ -126,7 +153,13 @@ export default function EventsPage() {
                 hosted by {event.host.displayName}
               </p>
 
-              <p className="event-card__meta">
+              <p
+                className={`event-card__meta ${
+                  !event.isFull && event.spotsLeft !== null && event.spotsLeft > 0 && event.spotsLeft <= 3
+                    ? "text-urgent"
+                    : ""
+                }`}
+              >
                 {event.isFull
                   ? "Full"
                   : event.spotsLeft === null
@@ -141,6 +174,18 @@ export default function EventsPage() {
 
                 {user && event.host.id === user.id ? (
                   <Link to={`/events/${event.id}/edit`}>Edit your event</Link>
+                ) : rsvpStatus[event.id] === "going" ? (
+                  <span
+                    className={`event-card__confirmed ${
+                      justConfirmed === event.id ? "confirm-pulse" : ""
+                    }`}
+                  >
+                    ✓ You're going
+                  </span>
+                ) : rsvpStatus[event.id] === "waitlisted" ? (
+                  <span className="event-card__confirmed event-card__confirmed--waitlist">
+                    On the waitlist
+                  </span>
                 ) : user ? (
                   <button type="button" onClick={() => handleRsvp(event.id)}>
                     RSVP

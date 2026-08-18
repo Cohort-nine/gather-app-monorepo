@@ -136,6 +136,81 @@ textarea {
   color: var(--accent);
 }
 
+/* Reliability band pill. Shared so "your score" in the nav and any future
+   surface reads as the same visual language as the attendee-list bands. */
+.reliability-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.reliability-badge--excellent {
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
+}
+
+.reliability-badge--good {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.reliability-badge--mixed {
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 15%, transparent);
+}
+
+.reliability-badge--unreliable {
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
+}
+
+.reliability-badge--unrated {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+}
+
+/* Scarcity cue — a low spot count is the one piece of information on an
+   event card that benefits from actually standing out. */
+.text-urgent {
+  color: #d97706;
+  font-weight: 700;
+}
+
+/* One brief pulse on the moment an RSVP confirms. Subtle on purpose — this
+   app's whole visual language (the intro animation) is understated, so a
+   confetti burst here would fight it rather than fit it. */
+@keyframes confirm-pulse {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  40% {
+    transform: scale(1.06);
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+.confirm-pulse {
+  animation: confirm-pulse 600ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-pulse {
+    animation: none;
+  }
+}
+
 @media (max-width: 640px) {
   .page {
     padding: 24px 12px 40px;

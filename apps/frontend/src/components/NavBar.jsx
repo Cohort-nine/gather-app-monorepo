@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import GatherLogo from "./GatherLogo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { reliabilityLabel } from "../lib/reliability.js";
 import "./NavBar.css";
 
 // ---------------------------------------------------------------------------
@@ -62,6 +63,14 @@ export default function NavBar() {
               <span className="nav__handle" title={user.displayName}>
                 @{user.handle}
               </span>
+              {user.reliability ? (
+                <span
+                  className={`reliability-badge reliability-badge--${user.reliability.band}`}
+                  title="Your reliability score — built from RSVPs you honored vs. missed"
+                >
+                  {reliabilityLabel(user.reliability.band)}
+                </span>
+              ) : null}
               <button type="button" className="nav__signout" onClick={handleSignOut}>
                 Sign out
               </button>
