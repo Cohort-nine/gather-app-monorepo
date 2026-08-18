@@ -1,6 +1,32 @@
-# Full Stack Application Template
+# Gather
 
-This repository is a student-friendly starter template for a full stack application using:
+### 🔴 [**Live demo → gather-app-beige.vercel.app**](https://gather-app-beige.vercel.app/)
+
+A social events app: host a gathering, RSVP to one, and build a track record of
+actually showing up. Built on top of a student full-stack starter template using
+React, Vite, Node/Express, PostgreSQL, and Prisma ORM.
+
+## Where the project actually stands right now
+
+This repo is mid-build, and the two halves are ahead of each other:
+
+- **Database design is the deep part of the project so far.** [`apps/backend/database/schema.sql`](apps/backend/database/schema.sql)
+  is a full relational design for Gather (see below) — events, RSVPs, attendance,
+  a social graph, a derived reliability/reputation system, notifications, and
+  safety reports — with a lot of the interesting logic (waitlist ordering,
+  attendance finalization, score derivation) already worked out in comments and
+  constraints, not just table shapes.
+- **The app code (frontend + Express routes) is still the original template
+  scaffold** — the `categories`/`items` example, not yet wired up to the real
+  Gather schema. Building out the real routes, controllers, and UI on top of the
+  schema above is the next big chunk of work.
+- A teammate's branch (`main`, merged via PR #1) has a real Gather **events**
+  API on the backend (`eventController.js`, `routes/events.js`) ahead of this
+  branch, but its frontend is also still the scaffold.
+
+## Template features
+
+The starter template this is built on provides:
 
 - React
 - Vite
@@ -67,6 +93,46 @@ This template uses two related tables:
 The `items` table has a foreign key to `categories`, which gives students a simple example of relational database design.
 
 In Prisma code, the models are named `Category` and `Item`, but the actual PostgreSQL tables are lowercase: `categories` and `items`.
+
+## The Gather database design
+
+The real schema for this project lives in
+[`apps/backend/database/schema.sql`](apps/backend/database/schema.sql) (PostgreSQL
+14+, using `pgcrypto` for UUIDs and `citext` for case-insensitive email/handles).
+It's organized into a few areas:
+
+- **Identity** — `users`, plus `user_privacy_settings` split into its own table so
+  privacy controls (who can see you listed as an attendee, whether your
+  reliability score is visible, etc.) can grow independently of the hot `users` row.
+- **Social graph** — `connections` (a symmetric friend edge, stored once per pair
+  via a canonical ordering constraint so it can never be double-inserted in
+  reverse) and `user_blocks`, which power "friends and friends-of-friends have
+  been here" on event listings.
+- **Events** — `events` (with full location fields, online/in-person, visibility
+  `public`/`unlisted`/`invite_only`, capacity, waitlist and guest rules, and a
+  `hide_exact_address_until_rsvp` flag for house-hosted gatherings), plus
+  `event_series` for recurring events, `event_cohosts`, and `event_tags`.
+- **RSVPs and attendance** — `rsvps` is the current-state row per person per
+  event; `rsvp_status_events` is an **append-only ledger** of every status
+  change, storing `hours_before_event` at write time (not derived later) so
+  editing an event's start time can't retroactively rewrite anyone's history.
+  `attendance` is a host-driven review gate — no row is ever inserted
+  automatically, so an unmarked 'going' RSVP means "not yet reviewed," never an
+  implicit no-show. Triggers keep this honest: editing attendance after an event
+  is finalized automatically un-finalizes it, and a host can't finalize while any
+  RSVP is still unreviewed.
+- **Trust layer** — `attendee_reliability` and `host_reputation` are **derived
+  caches**, rebuildable from the ledgers above, never authored directly. Scores
+  are framed as recoverable (rolling 12-month windows, not lifetime tallies) —
+  plus `host_ratings`, `badges`, and `user_badges`.
+- **Notifications** — a scheduled queue (`notifications`) with per-channel
+  `notification_preferences` (push/email/SMS/in-app).
+- **Safety** — `reports`, which must survive the reporter's account being
+  deleted (so it uses `ON DELETE SET NULL`, not `CASCADE`, on the reporter).
+- **Read models** — views like `event_attendance_checklist` and
+  `event_expected_headcount`, which weights RSVPs by each attendee's reliability
+  score instead of just counting raw "going" responses, so a new user with no
+  history isn't penalized (they default to a neutral 0.75).
 
 ## Requirements
 
