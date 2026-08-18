@@ -1,10 +1,12 @@
 import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./components/Home";
 import NavBar from "./components/NavBar";
+import EventDetailPage from "./pages/EventDetailPage";
 import EventFormPage from "./pages/EventFormPage";
 import EventsPage from "./pages/EventsPage";
 import LoginPage from "./pages/LoginPage";
 import MyEventsPage from "./pages/MyEventsPage";
+import MyRsvpsPage from "./pages/MyRsvpsPage";
 import SignupPage from "./pages/SignupPage";
 
 export default function App() {
@@ -25,8 +27,10 @@ export default function App() {
         {/* /events/new is declared before any /events/:id route so "new" can't
             be matched as an id. */}
         <Route path="/events/new" element={<EventFormPage />} />
+        <Route path="/events/:id" element={<EventDetailPage />} />
         <Route path="/events/:id/edit" element={<EventFormPage />} />
         <Route path="/my-events" element={<MyEventsPage />} />
+        <Route path="/my-rsvps" element={<MyRsvpsPage />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
