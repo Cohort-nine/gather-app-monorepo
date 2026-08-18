@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { cancelRsvp, fetchMyRsvps } from "../api/events.js";
+import GatherLogo from "../components/GatherLogo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./MyRsvpsPage.css";
 
@@ -168,6 +169,7 @@ export default function MyRsvpsPage() {
         <p className="status">Loading your RSVPs...</p>
       ) : rsvps.length === 0 && !error ? (
         <section className="panel my-rsvps__empty">
+          <GatherLogo className="empty-state__icon" />
           <h2>You haven't RSVP'd to anything yet</h2>
           <p>Once you sign up for a gathering, it'll show up here.</p>
           <Link to="/events">Browse gatherings</Link>

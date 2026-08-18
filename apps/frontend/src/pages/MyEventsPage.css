@@ -24,6 +24,27 @@
   flex-wrap: wrap;
 }
 
+.my-events__celebrate {
+  background: color-mix(in srgb, var(--accent) 10%, var(--panel-bg));
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--panel-border));
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1rem 0;
+}
+
+.my-events__celebrate .eyebrow {
+  margin: 0;
+}
+
+.my-events__celebrate h2 {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.my-events__celebrate p {
+  margin: 0 0 0.75rem;
+  color: var(--color-ink);
+}
+
 .my-events__dismiss {
   background: none;
   border: none;

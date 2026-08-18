@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchMyEvents } from "../api/events.js";
+import ConfettiBurst from "../components/ConfettiBurst.jsx";
+import GatherLogo from "../components/GatherLogo.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./MyEventsPage.css";
 
@@ -11,6 +13,31 @@ import "./MyEventsPage.css";
 // events. Without it a host could save a draft and never find it again, which
 // makes the draft status in the schema effectively unusable.
 // ---------------------------------------------------------------------------
+
+const SEEN_COMPLETIONS_KEY = "gather:seenCompletions";
+
+/**
+ * Which completed events this browser has already celebrated. Kept in
+ * localStorage, not component state — the whole point is that it survives a
+ * reload, so the confetti fires once per event ever, not once per visit.
+ */
+function getSeenCompletions() {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(SEEN_COMPLETIONS_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+}
+
+function markCompletionsSeen(ids) {
+  try {
+    const seen = getSeenCompletions();
+    ids.forEach((id) => seen.add(id));
+    localStorage.setItem(SEEN_COMPLETIONS_KEY, JSON.stringify([...seen]));
+  } catch {
+    /* Non-fatal — worst case the celebration replays once. */
+  }
+}
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   weekday: "short",
@@ -33,6 +60,8 @@ export default function MyEventsPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [celebration, setCelebration] = useState(null);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   const savedTitle = searchParams.get("saved");
   const justDeleted = searchParams.get("deleted");
@@ -43,7 +72,22 @@ export default function MyEventsPage() {
     setLoading(true);
     setError("");
     fetchMyEvents()
-      .then((res) => setEvents(res.data))
+      .then((res) => {
+        setEvents(res.data);
+
+        // Confetti is for a real milestone — a gathering that actually
+        // happened — not routine page loads, so it only fires for a
+        // completed event this browser hasn't already celebrated.
+        const completed = res.data.filter((event) => event.status === "completed");
+        const seen = getSeenCompletions();
+        const newlyCompleted = completed.find((event) => !seen.has(event.id));
+
+        if (newlyCompleted) {
+          setCelebration(newlyCompleted);
+          setShowConfetti(true);
+        }
+        markCompletionsSeen(completed.map((event) => event.id));
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [authLoading, user]);
@@ -77,6 +121,8 @@ export default function MyEventsPage() {
 
   return (
     <main className="page">
+      {showConfetti ? <ConfettiBurst onDone={() => setShowConfetti(false)} /> : null}
+
       <section className="panel">
         <p className="eyebrow">Gather</p>
         <div className="my-events__heading">
@@ -85,6 +131,20 @@ export default function MyEventsPage() {
             Host a gathering
           </Link>
         </div>
+
+        {celebration ? (
+          <section className="my-events__celebrate" role="status">
+            <p className="eyebrow">🎉 Nice work</p>
+            <h2>“{celebration.title}” happened</h2>
+            <p>
+              {celebration.goingCount} {celebration.goingCount === 1 ? "person" : "people"} RSVP'd —
+              that's a gathering.
+            </p>
+            <button type="button" className="my-events__dismiss" onClick={() => setCelebration(null)}>
+              Dismiss
+            </button>
+          </section>
+        ) : null}
 
         {savedTitle ? (
           <p className="status my-events__notice" role="status">
@@ -111,6 +171,7 @@ export default function MyEventsPage() {
         <p className="status">Loading your events...</p>
       ) : events.length === 0 && !error ? (
         <section className="panel my-events__empty">
+          <GatherLogo className="empty-state__icon" />
           <h2>You haven't hosted anything yet</h2>
           <p>
             A gathering can be four people and a pot of soup. Start there.
