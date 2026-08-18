@@ -3,7 +3,7 @@
 
 .event-form__intro {
   margin: 0 0 1.5rem;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .event-form h2 {
@@ -11,9 +11,9 @@
   font-size: 0.8rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--muted);
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .event-form h2:first-of-type {
@@ -62,8 +62,8 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4b5563;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: var(--surface-bg);
   border-radius: 999px;
   padding: 0.1rem 0.45rem;
 }
@@ -72,7 +72,7 @@
 .event-form__hint {
   display: block;
   font-size: 0.85rem;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 400;
   margin-top: 0.3rem;
 }
@@ -97,26 +97,26 @@
   gap: 0.75rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--panel-border);
 }
 
-/* .form button sets white-on-blue, so a transparent secondary has to reset the
-   text colour too or it renders white on white. */
+/* .form button sets white-on-accent, so a transparent secondary has to reset
+   the text colour too or it renders invisible on itself. */
 .event-form__secondary {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  color: #374151;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  color: var(--color-ink);
 }
 
 .event-form__secondary:hover:not(:disabled) {
-  border-color: #94a3b8;
-  background: #f9fafb;
+  border-color: var(--muted);
+  background: var(--panel-bg);
 }
 
 /* Destructive, so it should not look like the thing you click by reflex. */
 .event-form__danger {
   margin-left: auto;
-  background: #ffffff;
+  background: var(--surface-bg);
   border: 1px solid #dc2626;
   color: #dc2626;
 }
@@ -132,7 +132,7 @@
 }
 
 .event-form__cancel {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 0.95rem;
 }
 

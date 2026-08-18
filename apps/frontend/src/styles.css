@@ -12,6 +12,7 @@
   --surface-bg: rgba(255,255,255,0.02);
   --surface-border: rgba(255,255,255,0.06);
   --accent: #60a5fa;           /* blue accent tuned for dark */
+  --accent-strong: #93c5fd;    /* hover/emphasis — lighter reads as "brighter" on dark */
   --muted: #94a3b8;
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
@@ -26,6 +27,7 @@
   --surface-bg: #ffffff;
   --surface-border: #cbd5e1;
   --accent: #2563eb;
+  --accent-strong: #1d4ed8;    /* hover/emphasis — darker reads as "stronger" on light */
   --muted: #6b7280;
   --shadow: 0 10px 30px rgba(15,23,42,0.06);
 }
@@ -116,6 +118,22 @@ textarea {
 
 .status--error {
   color: #f97316; /* orange/red stands out on both themes */
+}
+
+.theme-toggle {
+  border: 1px solid var(--surface-border);
+  border-radius: 999px;
+  padding: 6px 14px;
+  background: var(--surface-bg);
+  color: var(--color-ink);
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 @media (max-width: 640px) {

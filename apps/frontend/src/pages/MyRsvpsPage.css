@@ -18,7 +18,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #4b5563;
+  color: var(--muted);
   margin: 1.75rem 0 0.75rem;
 }
 
@@ -32,14 +32,15 @@
 }
 
 .my-rsvps__card h3 a:hover {
-  color: #1d4ed8;
+  color: var(--accent);
   text-decoration: underline;
 }
 
 /* Past RSVPs are history, not things to act on — dimmed so the upcoming list
    reads first, but still legible rather than greyed into uselessness. */
 .my-rsvps__past .event-card {
-  background: #fafafa;
+  background: color-mix(in srgb, var(--panel-bg) 60%, transparent);
+  opacity: 0.85;
 }
 
 .my-rsvps__status {
@@ -54,23 +55,23 @@
 }
 
 .my-rsvps__status--going {
-  color: #15803d;
-  background: #f0fdf4;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
 }
 
 .my-rsvps__status--waitlisted {
-  color: #b45309;
-  background: #fffbeb;
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 15%, transparent);
 }
 
 .my-rsvps__status--cancelled {
-  color: #b91c1c;
-  background: #fef2f2;
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
 }
 
 .my-rsvps__status--declined {
-  color: #4b5563;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
 .my-rsvps__actions {
@@ -87,14 +88,14 @@
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: #b91c1c;
+  color: #dc2626;
   text-decoration: underline;
   cursor: pointer;
   width: auto;
 }
 
 .my-rsvps__cancel:hover:not(:disabled) {
-  color: #7f1d1d;
+  color: #b91c1c;
 }
 
 .my-rsvps__cancel:disabled {
@@ -111,7 +112,7 @@
 }
 
 .my-rsvps__empty p {
-  color: #4b5563;
+  color: var(--muted);
   max-width: 42ch;
   margin: 0 auto 1.25rem;
 }

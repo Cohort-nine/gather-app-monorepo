@@ -1,12 +1,12 @@
-/* Persistent top navigation. Matches the light theme in styles.css:
-   #f3f4f6 page, #ffffff surfaces, #2563eb accent. */
+/* Persistent top navigation. Uses the theme tokens from styles.css so it
+   follows dark/light mode instead of a fixed palette. */
 
 .nav {
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
-  border-bottom: 1px solid #e5e7eb;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  border-bottom: 1px solid var(--panel-border);
   /* Sticky + translucent means content scrolling underneath stays legible
      without the bar feeling heavy. */
   backdrop-filter: saturate(180%) blur(8px);
@@ -25,7 +25,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: none;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -39,7 +39,7 @@
 
 .nav__wordmark {
   font-size: 1.05rem;
-  color: #111827;
+  color: var(--color-ink);
 }
 
 .nav__links {
@@ -60,39 +60,39 @@
   display: inline-block;
   padding: 8px 12px;
   border-radius: 8px;
-  color: #374151;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 600;
   white-space: nowrap;
 }
 
 .nav__link:hover {
-  background: #eef2ff;
-  color: #1d4ed8;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
 }
 
 /* The active section is marked three ways — colour, weight, and an underline —
    so it never depends on colour alone. */
 .nav__link.active {
-  color: #1d4ed8;
-  background: #eef2ff;
-  box-shadow: inset 0 -2px 0 #2563eb;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
 }
 
 .nav__link--cta {
-  background: #2563eb;
+  background: var(--accent);
   color: #ffffff;
 }
 
 .nav__link--cta:hover,
 .nav__link--cta.active {
-  background: #1d4ed8;
+  background: var(--accent-strong);
   color: #ffffff;
   box-shadow: none;
 }
 
 .nav__handle {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 0.9rem;
   font-weight: 600;
   max-width: 14ch;
@@ -103,18 +103,18 @@
 
 .nav__signout {
   background: none;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--surface-border);
   border-radius: 8px;
   padding: 7px 12px;
-  color: #374151;
+  color: var(--color-ink);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .nav__signout:hover {
-  border-color: #9ca3af;
-  background: #f9fafb;
+  border-color: var(--muted);
+  background: var(--surface-bg);
 }
 
 @media (max-width: 720px) {

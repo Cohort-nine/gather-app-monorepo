@@ -1,5 +1,6 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import GatherLogo from "./GatherLogo.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./NavBar.css";
 
@@ -75,6 +76,7 @@ export default function NavBar() {
               </NavLink>
             </>
           )}
+          <ThemeToggle />
         </div>
       </div>
     </header>

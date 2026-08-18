@@ -29,7 +29,7 @@
   border: none;
   padding: 0;
   font: inherit;
-  color: #2563eb;
+  color: var(--accent);
   text-decoration: underline;
   cursor: pointer;
   width: auto;
@@ -49,23 +49,23 @@
 }
 
 .my-events__status--draft {
-  color: #4b5563;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
 .my-events__status--published {
-  color: #15803d;
-  background: #f0fdf4;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
 }
 
 .my-events__status--cancelled {
-  color: #b91c1c;
-  background: #fef2f2;
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
 }
 
 .my-events__status--completed {
-  color: #6b7280;
-  background: #f9fafb;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
 }
 
 .my-events__actions {
@@ -83,7 +83,7 @@
 }
 
 .my-events__empty p {
-  color: #6b7280;
+  color: var(--muted);
   max-width: 42ch;
   margin: 0 auto 1.25rem;
 }

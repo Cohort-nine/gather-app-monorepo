@@ -6,13 +6,13 @@
 }
 
 .event-detail__back a {
-  color: #4b5563;
+  color: var(--muted);
   text-decoration: none;
   font-weight: 600;
 }
 
 .event-detail__back a:hover {
-  color: #1d4ed8;
+  color: var(--accent);
 }
 
 .event-detail__header {
@@ -43,18 +43,18 @@
 }
 
 .event-detail__status--draft {
-  color: #4b5563;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
 .event-detail__status--cancelled {
-  color: #b91c1c;
-  background: #fef2f2;
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
 }
 
 .event-detail__status--completed {
-  color: #4b5563;
-  background: #f9fafb;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
 }
 
 .event-detail__cancelled {
@@ -81,33 +81,34 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #4b5563;
+  color: var(--muted);
   margin-bottom: 0.35rem;
 }
 
 .event-detail__facts dd {
   margin: 0;
   line-height: 1.5;
+  color: var(--color-ink);
 }
 
 .event-detail__hidden-address span {
-  color: #4b5563;
+  color: var(--muted);
   font-style: italic;
 }
 
 .event-detail__past {
-  color: #4b5563;
+  color: var(--muted);
 }
 
 .event-detail__handle {
-  color: #6b7280;
+  color: var(--muted);
   font-size: 0.9rem;
 }
 
 .event-detail__rating {
   margin-top: 0.2rem;
   font-size: 0.9rem;
-  color: #4b5563;
+  color: var(--muted);
 }
 
 .event-detail__rating--none {
@@ -119,6 +120,7 @@
   line-height: 1.65;
   white-space: pre-wrap;
   max-width: 70ch;
+  color: var(--color-ink);
 }
 
 .event-detail__tags {
@@ -132,8 +134,8 @@
 
 .event-detail__tags li {
   font-size: 0.85rem;
-  color: #1d4ed8;
-  background: #eef2ff;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
   border-radius: 999px;
   padding: 0.2rem 0.7rem;
 }
@@ -145,7 +147,7 @@
   gap: 0.9rem;
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--panel-border);
 }
 
 .event-detail__button {
@@ -153,7 +155,7 @@
   border: 0;
   border-radius: 10px;
   padding: 12px 18px;
-  background: #2563eb;
+  background: var(--accent);
   color: #ffffff;
   font-weight: 700;
   text-decoration: none;
@@ -161,7 +163,7 @@
 }
 
 .event-detail__button:hover:not(:disabled) {
-  background: #1d4ed8;
+  background: var(--accent-strong);
 }
 
 .event-detail__button:disabled {
@@ -171,15 +173,15 @@
 
 .event-detail__yourstatus {
   font-weight: 700;
-  color: #15803d;
+  color: #16a34a;
 }
 
 .event-detail__cancel {
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
   border-radius: 10px;
   padding: 11px 16px;
-  color: #374151;
+  color: var(--color-ink);
   font-weight: 600;
   cursor: pointer;
 }
@@ -207,7 +209,7 @@
   align-items: baseline;
   gap: 0.5rem;
   padding: 0.6rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .event-detail__people li:last-child,
@@ -221,12 +223,12 @@
 
 .event-detail__guests {
   font-size: 0.85rem;
-  color: #4b5563;
+  color: var(--muted);
 }
 
 .event-detail__position {
   font-variant-numeric: tabular-nums;
-  color: #6b7280;
+  color: var(--muted);
   font-weight: 700;
   min-width: 2.2rem;
 }
@@ -246,28 +248,28 @@
 }
 
 .event-detail__band--excellent {
-  color: #15803d;
-  background: #f0fdf4;
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
 }
 
 .event-detail__band--good {
-  color: #1d4ed8;
-  background: #eef2ff;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .event-detail__band--mixed {
-  color: #b45309;
-  background: #fffbeb;
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 15%, transparent);
 }
 
 .event-detail__band--unreliable {
-  color: #b91c1c;
-  background: #fef2f2;
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
 }
 
 .event-detail__band--unrated {
-  color: #4b5563;
-  background: #f3f4f6;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
 @media (max-width: 600px) {
