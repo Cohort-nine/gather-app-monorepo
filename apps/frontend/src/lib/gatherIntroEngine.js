@@ -109,6 +109,14 @@ export function createIntroEngine({ canvas, stage, fontFamily, T = DEFAULT_T, FE
     // font that's actually loaded, instead of guessing a font-metric ratio.
     ctx.save();
     ctx.font = wordBox.font;
+    // actualBoundingBoxAscent is measured relative to whatever textBaseline
+    // is set at measure time — it must match paintWordmark's 'middle', or
+    // this reports the gap to the alphabetic baseline instead of to cy.
+    // Left at the canvas default ('alphabetic') this over-reports the gap by
+    // a fixed fraction of fontSize, so the logo floats further and further
+    // above the wordmark as fontSize climbs toward its desktop ceiling,
+    // instead of holding the intended constant 20px clearance at any size.
+    ctx.textBaseline = 'middle';
     if ('letterSpacing' in ctx) {
       ctx.letterSpacing = `${(-0.045 * fontSize).toFixed(2)}px`;
     }
