@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "node --watch server/server.js",
     "start": "node server/server.js",
+    "postinstall": "prisma generate",
+    "test": "vitest run",
     "db:up": "docker compose -f ../../docker-compose.yml up -d postgres",
     "db:down": "docker compose -f ../../docker-compose.yml down",
     "db:logs": "docker compose -f ../../docker-compose.yml logs -f postgres",
@@ -18,16 +23,29 @@
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force && prisma db seed",
     "sql:schema": "psql \"$DATABASE_URL\" -f database/schema.sql",
-    "sql:seed": "psql \"$DATABASE_URL\" -f database/seed.sql"
+    "sql:seed": "psql \"$DATABASE_URL\" -f database/seed.sql",
+    "sql:build": "node database/build-schema.js",
+    "sql:check": "node database/build-schema.js --check",
+    "doppler:setup": "doppler setup",
+    "doppler:import": "doppler secrets upload .env",
+    "doppler:secrets": "doppler secrets",
+    "dev:doppler": "doppler run -- npm run dev",
+    "start:doppler": "doppler run -- npm run start",
+    "prisma:migrate:doppler": "doppler run -- npm run prisma:migrate",
+    "prisma:deploy:doppler": "doppler run -- npm run prisma:deploy",
+    "db:seed:doppler": "doppler run -- npm run db:seed"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "dotenv": "^16.6.1",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
-    "prisma": "^7.8.0"
+    "prisma": "^7.8.0",
+    "vitest": "^2.1.9"
   }
 }

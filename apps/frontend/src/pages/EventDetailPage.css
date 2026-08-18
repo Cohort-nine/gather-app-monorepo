@@ -1,0 +1,294 @@
+/* Event detail. Uses .page / .panel / .status / .eyebrow from styles.css and
+   borrows the skeleton lines from EventsPage.css for its loading state. */
+
+.event-detail__back {
+  margin: 0 0 12px;
+}
+
+.event-detail__back a {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.event-detail__back a:hover {
+  color: var(--accent);
+}
+
+.event-detail__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.event-detail__header h1 {
+  margin: 0.15rem 0 0;
+}
+
+.event-detail__header .eyebrow {
+  margin: 0;
+}
+
+.event-detail__status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+.event-detail__status--draft {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+}
+
+.event-detail__status--cancelled {
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
+}
+
+.event-detail__status--completed {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+}
+
+.event-detail__cancelled {
+  margin-top: 1rem;
+  font-weight: 600;
+}
+
+/* Facts as a definition list: it's genuinely term/description data, which
+   means a screen reader announces "When: Friday..." rather than two loose
+   fragments. */
+.event-detail__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem 2rem;
+  margin: 1.75rem 0 0;
+}
+
+.event-detail__facts div {
+  min-width: 0;
+}
+
+.event-detail__facts dt {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.event-detail__facts dd {
+  margin: 0;
+  line-height: 1.5;
+  color: var(--color-ink);
+}
+
+.event-detail__hidden-address span {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.event-detail__past {
+  color: var(--muted);
+}
+
+.event-detail__handle {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.event-detail__rating {
+  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.event-detail__rating--none {
+  font-style: italic;
+}
+
+.event-detail__description {
+  margin: 1.75rem 0 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  max-width: 70ch;
+  color: var(--color-ink);
+}
+
+.event-detail__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 1.25rem 0 0;
+}
+
+.event-detail__tags li {
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+}
+
+.event-detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--panel-border);
+}
+
+.event-detail__button {
+  display: inline-block;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.event-detail__button:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.event-detail__button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.event-detail__yourstatus {
+  font-weight: 700;
+  color: #16a34a;
+}
+
+.event-detail__cancel {
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: 11px 16px;
+  color: var(--color-ink);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.event-detail__cancel:hover:not(:disabled) {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.event-detail__people,
+.event-detail__waitlist {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+
+.event-detail__waitlist {
+  counter-reset: none;
+}
+
+.event-detail__people li,
+.event-detail__waitlist li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.event-detail__people li:last-child,
+.event-detail__waitlist li:last-child {
+  border-bottom: 0;
+}
+
+.event-detail__person-name {
+  font-weight: 600;
+}
+
+.event-detail__guests {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.event-detail__position {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  font-weight: 700;
+  min-width: 2.2rem;
+}
+
+/* Reliability band, shown to help someone decide whether a gathering will
+   actually happen. Border plus text, never colour alone. */
+.event-detail__band {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.event-detail__band--excellent {
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 15%, transparent);
+}
+
+.event-detail__band--good {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+.event-detail__band--mixed {
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 15%, transparent);
+}
+
+.event-detail__band--unreliable {
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 15%, transparent);
+}
+
+.event-detail__band--unrated {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 15%, transparent);
+}
+
+@media (max-width: 600px) {
+  .event-detail__header {
+    flex-direction: column;
+  }
+
+  .event-detail__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .event-detail__button,
+  .event-detail__cancel {
+    text-align: center;
+    min-height: 44px;
+  }
+
+  .event-detail__band {
+    margin-left: 0;
+  }
+}

@@ -1,0 +1,162 @@
+/* Persistent top navigation. Uses the theme tokens from styles.css so it
+   follows dark/light mode instead of a fixed palette. */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  border-bottom: 1px solid var(--panel-border);
+  /* Sticky + translucent means content scrolling underneath stays legible
+     without the bar feeling heavy. */
+  backdrop-filter: saturate(180%) blur(8px);
+}
+
+.nav__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+}
+
+.nav__logo {
+  width: 26px;
+  height: 26px;
+}
+
+.nav__wordmark {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  color: var(--color-ink);
+}
+
+.nav__links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+}
+
+.nav__account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.nav__link {
+  display: inline-block;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.nav__link:hover {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+}
+
+/* The active section is marked three ways — colour, weight, and an underline —
+   so it never depends on colour alone. */
+.nav__link.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.nav__link--cta {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.nav__link--cta:hover,
+.nav__link--cta.active {
+  background: var(--accent-strong);
+  color: #ffffff;
+  box-shadow: none;
+}
+
+.nav__handle {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav__signout {
+  background: none;
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: var(--color-ink);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.nav__signout:hover {
+  border-color: var(--muted);
+  background: var(--surface-bg);
+}
+
+@media (max-width: 720px) {
+  .nav__inner {
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding: 10px 12px;
+  }
+
+  /* Brand and account on the top row, section links on their own row below —
+     keeps every target full size instead of shrinking them to fit. */
+  .nav__brand {
+    order: 1;
+  }
+
+  .nav__account {
+    order: 2;
+    margin-left: auto;
+  }
+
+  .nav__links {
+    order: 3;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    /* Let the row scroll sideways rather than wrap into a tall stack. */
+    scrollbar-width: none;
+  }
+
+  .nav__links::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav__wordmark {
+    display: none;
+  }
+
+  .nav__link,
+  .nav__signout {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+}

@@ -1,124 +1,58 @@
-import { useEffect, useState } from "react";
-import { createItem, fetchCategories, fetchItems } from "./api/items.js";
-import ItemList from "./components/ItemList.jsx";
-
-const emptyForm = {
-  name: "",
-  description: "",
-  categoryId: ""
-};
+import { Route, Routes, useLocation } from "react-router-dom";
+import Home from "./components/Home";
+import NavBar from "./components/NavBar";
+import EventDetailPage from "./pages/EventDetailPage";
+import EventFormPage from "./pages/EventFormPage";
+import EventsPage from "./pages/EventsPage";
+import LoginPage from "./pages/LoginPage";
+import MyEventsPage from "./pages/MyEventsPage";
+import MyRsvpsPage from "./pages/MyRsvpsPage";
+import SignupPage from "./pages/SignupPage";
 
 export default function App() {
-  const [items, setItems] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [form, setForm] = useState(emptyForm);
-  const [status, setStatus] = useState("Loading items...");
+  const { pathname } = useLocation();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const [itemData, categoryData] = await Promise.all([
-          fetchItems(),
-          fetchCategories()
-        ]);
+  // Home ships its own nav, built around the intro animation that flies the
+  // logo into a reserved slot. A second bar on top would fight it.
+  const showNav = pathname !== "/";
 
-        setItems(itemData);
-        setCategories(categoryData);
-        setStatus("");
-      } catch (error) {
-        setStatus(error.message);
-      }
-    }
+  return (
+    <>
+      {showNav ? <NavBar /> : null}
 
-    loadData();
-  }, []);
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/events" element={<EventsPage />} />
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-    setForm((currentForm) => ({
-      ...currentForm,
-      [name]: value
-    }));
-  }
+        {/* /events/new is declared before any /events/:id route so "new" can't
+            be matched as an id. */}
+        <Route path="/events/new" element={<EventFormPage />} />
+        <Route path="/events/:id" element={<EventDetailPage />} />
+        <Route path="/events/:id/edit" element={<EventFormPage />} />
+        <Route path="/my-events" element={<MyEventsPage />} />
+        <Route path="/my-rsvps" element={<MyRsvpsPage />} />
 
-  async function handleSubmit(event) {
-    event.preventDefault();
-    setStatus("Saving item...");
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-    try {
-      const savedItem = await createItem(form);
-      setItems((currentItems) => [...currentItems, savedItem]);
-      setForm(emptyForm);
-      setStatus("Item created successfully.");
-    } catch (error) {
-      setStatus(error.message);
-    }
-  }
+        {/* Anything unmatched. Without this, a bad URL renders a blank page and
+            looks like the app crashed. */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
+  );
+}
 
+function NotFound() {
   return (
     <main className="page">
       <section className="panel">
-        <p className="eyebrow">React + Express + PostgreSQL + Prisma</p>
-        <h1>Student Full Stack Template</h1>
-        <p>
-          This starter includes a small example with categories and items so
-          students can see how the frontend, backend, and database connect.
+        <p className="eyebrow">404</p>
+        <h1>That page doesn't exist</h1>
+        <p className="status">
+          The link may be out of date, or the event may have been deleted.
         </p>
-      </section>
-
-      <section className="grid">
-        <article className="panel">
-          <h2>Create an item</h2>
-          <form className="form" onSubmit={handleSubmit}>
-            <label>
-              Item name
-              <input
-                name="name"
-                value={form.name}
-                onChange={handleChange}
-                placeholder="Build a new feature"
-                required
-              />
-            </label>
-
-            <label>
-              Description
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                placeholder="Describe the task"
-                rows="4"
-                required
-              />
-            </label>
-
-            <label>
-              Category
-              <select
-                name="categoryId"
-                value={form.categoryId}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <button type="submit">Create item</button>
-          </form>
-        </article>
-
-        <article className="panel">
-          <h2>Example items</h2>
-          {status ? <p className="status">{status}</p> : null}
-          <ItemList items={items} />
-        </article>
+        <a href="/events">Browse gatherings</a>
       </section>
     </main>
   );
