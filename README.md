@@ -6,24 +6,6 @@ A social events app: host a gathering, RSVP to one, and build a track record of
 actually showing up. Built on top of a student full-stack starter template using
 React, Vite, Node/Express, PostgreSQL, and Prisma ORM.
 
-## Where the project actually stands right now
-
-This repo is mid-build, and the two halves are ahead of each other:
-
-- **Database design is the deep part of the project so far.** [`apps/backend/database/schema.sql`](apps/backend/database/schema.sql)
-  is a full relational design for Gather (see below) — events, RSVPs, attendance,
-  a social graph, a derived reliability/reputation system, notifications, and
-  safety reports — with a lot of the interesting logic (waitlist ordering,
-  attendance finalization, score derivation) already worked out in comments and
-  constraints, not just table shapes.
-- **The app code (frontend + Express routes) is still the original template
-  scaffold** — the `categories`/`items` example, not yet wired up to the real
-  Gather schema. Building out the real routes, controllers, and UI on top of the
-  schema above is the next big chunk of work.
-- A teammate's branch (`main`, merged via PR #1) has a real Gather **events**
-  API on the backend (`eventController.js`, `routes/events.js`) ahead of this
-  branch, but its frontend is also still the scaffold.
-
 ## Template features
 
 The starter template this is built on provides:
