@@ -28,7 +28,7 @@ export default function Home() {
       <nav className="home__nav">
         <div className="home__nav-side">
           <Link to="/events">Browse</Link>
-          <a href="#host">Host</a>
+          <Link to="/events/new">Host</Link>
         </div>
 
         {/* The logo flies into this slot. It reserves its space from the first
