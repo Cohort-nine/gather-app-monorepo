@@ -45,3 +45,54 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+
+  # ---------------------------------------------------------------------------
+  # Deploy the frontend to Vercel.
+  #
+  # Vercel gates its GitHub integration behind Pro for private organisation
+  # repos, so the repo is NOT connected to Vercel. Without this job someone has
+  # to remember to run `vercel --prod` by hand after every merge, and the
+  # deployed site silently drifts behind main — which is exactly what happened.
+  #
+  # The Vercel CLI authenticates with a token instead, which works on the free
+  # plan. VERCEL_TOKEN is the only secret; the org and project ids are not
+  # sensitive (they're already committed in apps/frontend/.vercel/project.json)
+  # but live here as variables so this file reads as self-contained.
+  # ---------------------------------------------------------------------------
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    # Only after both suites pass, and only for main — a red PR must never ship,
+    # and pull requests should build without deploying.
+    needs: [backend-tests, frontend-build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    defaults:
+      run:
+        working-directory: apps/frontend
+
+    env:
+      VERCEL_ORG_ID: team_nwfbXFBB5MLSmKAwxCanIAmP
+      VERCEL_PROJECT_ID: prj_JmEaAfiL423UAVTH9w1Kt2xH5udB
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Pinned rather than @latest: a CLI major bump shouldn't be able to break
+      # deploys on a morning when nobody touched the app.
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58.10.0
+
+      - name: Pull Vercel environment settings
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      # Builds here rather than on Vercel's servers, so VITE_API_BASE_URL comes
+      # from the settings pulled above and the output is inspectable in the log.
+      - name: Build
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
