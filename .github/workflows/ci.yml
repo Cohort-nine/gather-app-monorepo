@@ -89,10 +89,43 @@ jobs:
       - name: Pull Vercel environment settings
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
+      # The API base URL is NOT a secret. Vite inlines it into the bundle, so it
+      # is readable by anyone who opens devtools and it appears in the URL of
+      # every request the app makes. Keeping it in a dashboard field bought no
+      # security and cost a day: the value there was wrong, pointed the frontend
+      # at its own origin, and every POST came back 405 while every GET returned
+      # the SPA's index.html instead of JSON.
+      #
+      # So it lives here, in version control, where it is reviewable and the
+      # build is reproducible. This overwrites whatever `vercel pull` fetched.
+      - name: Pin the API base URL
+        env:
+          API_BASE_URL: https://gather-api-uw1k.onrender.com/api
+        run: |
+          mkdir -p .vercel
+          touch .vercel/.env.production.local
+          grep -v '^VITE_API_BASE_URL=' .vercel/.env.production.local > .vercel/.env.next || true
+          mv .vercel/.env.next .vercel/.env.production.local
+          echo "VITE_API_BASE_URL=$API_BASE_URL" >> .vercel/.env.production.local
+          echo "--- .vercel/.env.production.local ---"
+          cat .vercel/.env.production.local
+
       # Builds here rather than on Vercel's servers, so VITE_API_BASE_URL comes
-      # from the settings pulled above and the output is inspectable in the log.
+      # from the file above and the output is inspectable in the log.
       - name: Build
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      # Cheap insurance against a silent regression: if the compiled bundle does
+      # not contain the API host, the frontend is pointed somewhere else again
+      # and the deploy should fail loudly rather than ship a broken site.
+      - name: Verify the API URL made it into the bundle
+        run: |
+          if grep -rq "gather-api-uw1k.onrender.com" .vercel/output/static/assets/*.js; then
+            echo "OK: bundle points at the Render API."
+          else
+            echo "FAIL: built bundle does not reference the API host." >&2
+            exit 1
+          fi
 
       - name: Deploy
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

@@ -45,7 +45,7 @@ export default function MyRsvpsPage() {
     setLoading(true);
     setError("");
     return fetchMyRsvps()
-      .then((res) => setRsvps(res.data))
+      .then((res) => setRsvps(res.data ?? []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
