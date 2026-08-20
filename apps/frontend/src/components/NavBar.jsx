@@ -33,15 +33,20 @@ export default function NavBar() {
   return (
     <header className="nav">
       <div className="nav__inner">
-        {/* Name far left, logo dead-center — mirrors where the intro lands its
-            logo, so the mark reads as the same anchor point once the intro
-            hands off to this persistent bar on every other page. */}
-        <Link className="nav__wordmark" to="/">
-          Gather
-        </Link>
+        {/* Logo and name together, far left.
 
-        <Link className="nav__logo-link" to="/" aria-label="Gather home">
+            This used to be a three-track grid with the logo pinned dead-centre,
+            echoing where the intro animation lands it. That reads nicely signed
+            out, but signed in the right-hand side needs ~805px and its track
+            only had 491px, so the links overflowed leftward and printed
+            straight through the logo. Centring a mark between two tracks only
+            works while both stay narrower than half the bar, and this one
+            can't — the account row grows with the handle and the badge.
+
+            One brand link, laid out left, cannot collide with anything. */}
+        <Link className="nav__brand" to="/" aria-label="Gather home">
           <GatherLogo className="nav__logo" />
+          <span className="nav__wordmark">Gather</span>
         </Link>
 
         <div className="nav__right">
