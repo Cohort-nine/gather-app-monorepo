@@ -158,7 +158,7 @@ export default function EventFormPage() {
 
   useEffect(() => {
     fetchCategories()
-      .then((res) => setCategories(res.data))
+      .then((res) => setCategories(res.data ?? []))
       .catch(() => {});
   }, []);
 
