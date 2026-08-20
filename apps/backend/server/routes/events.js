@@ -5,7 +5,8 @@ import {
   getEvent,
   listCategories,
   listEvents,
-  updateEvent
+  updateEvent,
+  uploadEventImage
 } from "../controllers/eventController.js";
 import {
   cancelRsvp,
@@ -14,7 +15,9 @@ import {
   markAttendance
 } from "../controllers/rsvpController.js";
 import { createOrUpdateRating, listEventRatings } from "../controllers/ratingController.js";
+import { mutualAttendees } from "../controllers/connectionsController.js";
 import { optionalAuth, requireAuth, requireEventEdit, requireRsvpManagement } from "../lib/auth.js";
+import { imageUpload } from "../lib/upload.js";
 
 const router = Router();
 
@@ -31,6 +34,20 @@ router.get("/events/:id", optionalAuth, getEvent);
 router.post("/events", requireAuth, createEvent);
 router.put("/events/:id", requireAuth, requireEventEdit, updateEvent);
 router.delete("/events/:id", requireAuth, requireEventEdit, deleteEvent);
+
+// Cover image is a separate, multipart step — authorization runs (and can
+// reject) before any file is read off the wire.
+router.post(
+  "/events/:id/image",
+  requireAuth,
+  requireEventEdit,
+  imageUpload.single("image"),
+  uploadEventImage
+);
+
+// Public-ish like the rest of the event reads: optionalAuth so an anonymous
+// visitor gets an empty result instead of a 401.
+router.get("/events/:id/mutual-attendees", optionalAuth, mutualAttendees);
 
 // ---- RSVPs --------------------------------------------------------------
 router.post("/events/:id/rsvp", requireAuth, createOrUpdateRsvp);

@@ -1,4 +1,4 @@
-import { apiFetch } from "./client.js";
+import { apiFetch, apiUpload } from "./client.js";
 
 export const fetchEvents = (params = {}, options = {}) => {
   const query = new URLSearchParams(
@@ -35,3 +35,15 @@ export const rsvpToEvent = (id, payload = {}) =>
 export const cancelRsvp = (id) => apiFetch(`/events/${id}/rsvp`, { method: "DELETE" });
 
 export const fetchMyRsvps = () => apiFetch("/me/rsvps");
+
+// Empty on purpose for a signed-out visitor rather than an error — see
+// MutualAttendees.jsx, which relies on that to render nothing quietly.
+export const fetchMutualAttendees = (id) => apiFetch(`/events/${id}/mutual-attendees`, { auth: true });
+
+export const fetchFriendsEvents = () => apiFetch("/me/friends-events");
+
+export const uploadEventImage = (id, file) => {
+  const formData = new FormData();
+  formData.append("image", file);
+  return apiUpload(`/events/${id}/image`, formData);
+};

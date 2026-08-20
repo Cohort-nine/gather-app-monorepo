@@ -14,6 +14,7 @@
 import { Prisma } from "@prisma/client";
 import prisma from "../db/prisma.js";
 import { isUuid, slugify, validateEventPayload } from "../lib/validateEvent.js";
+import { deleteUploadedImage, publicUploadUrl, saveUploadedImage } from "../lib/upload.js";
 
 // ORDER BY cannot be parameterized, so sort keys come from a fixed whitelist.
 // Passing user input straight into the SQL string here would be an injection
@@ -136,6 +137,7 @@ export async function listEvents(req, res, next) {
         e.capacity,
         e.visibility,
         e.status,
+        e.image_url             AS "imageUrl",
         e.hide_exact_address_until_rsvp AS "hideExactAddress",
         u.id                   AS "hostId",
         u.handle               AS "hostHandle",
@@ -184,6 +186,7 @@ export async function listEvents(req, res, next) {
       capacity: r.capacity,
       visibility: r.visibility,
       status: r.status,
+      imageUrl: r.imageUrl,
       // The exact address is withheld until someone RSVPs. The browse endpoint
       // never returns street-level detail for house-hosted events.
       hideExactAddress: r.hideExactAddress,
@@ -477,6 +480,57 @@ export async function updateEvent(req, res, next) {
       data: { ...event, tags: event.tags.map((t) => t.tag) }
     });
   } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * POST /api/events/:id/image — host/cohost only (requireEventEdit runs first).
+ *
+ * Multipart, single field "image". Two-step by design: an event is created
+ * through the plain JSON endpoint above, then its cover image is attached
+ * here — imageUrl is null on a freshly created event until this runs.
+ */
+export async function uploadEventImage(req, res, next) {
+  const { id } = req.params;
+
+  if (!isUuid(id)) {
+    return res.status(400).json({ message: "id must be a valid UUID" });
+  }
+  if (!req.file) {
+    return res.status(400).json({ message: "Validation failed", errors: ["image file is required"] });
+  }
+
+  try {
+    const existing = await prisma.event.findUnique({ where: { id }, select: { imageUrl: true } });
+    if (!existing) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    const filename = await saveUploadedImage(req.file);
+    const url = publicUploadUrl(filename);
+
+    const event = await prisma.event.update({
+      where: { id },
+      data: { imageUrl: url },
+      include: {
+        host: { select: { id: true, handle: true, displayName: true } },
+        category: true,
+        tags: { select: { tag: true } }
+      }
+    });
+
+    // Best-effort — an orphaned old file costs disk space, not correctness.
+    if (existing.imageUrl) await deleteUploadedImage(existing.imageUrl);
+
+    res.json({
+      message: "Event image updated successfully",
+      data: { ...event, tags: event.tags.map((t) => t.tag) }
+    });
+  } catch (error) {
+    if (error.isUploadValidation) {
+      return res.status(400).json({ message: error.message, errors: [error.message] });
+    }
     next(error);
   }
 }

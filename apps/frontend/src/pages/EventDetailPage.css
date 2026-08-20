@@ -15,6 +15,34 @@
   color: var(--accent);
 }
 
+/* Bleeds to the panel's edges (negative margin matching .panel's own 24px
+   padding) and rounds only the top corners, so the panel reads as one card
+   with a photo header rather than a photo floating inside it. */
+.event-detail__cover {
+  margin: -24px -24px 20px;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  aspect-ratio: 21 / 9;
+  background: var(--surface-bg);
+}
+
+.event-detail__cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* .panel's own padding drops to 20px at this breakpoint (styles.css) — the
+   cover's negative margin has to match it exactly or it leaves a sliver gap
+   on one edge instead of bleeding flush. */
+@media (max-width: 640px) {
+  .event-detail__cover {
+    margin: -20px -20px 20px;
+    aspect-ratio: 16 / 9;
+  }
+}
+
 .event-detail__header {
   display: flex;
   align-items: flex-start;
@@ -156,14 +184,16 @@
   border-radius: 10px;
   padding: 12px 18px;
   background: var(--accent);
-  color: #ffffff;
+  color: var(--accent-ink);
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  transition: box-shadow 0.15s ease;
 }
 
 .event-detail__button:hover:not(:disabled) {
   background: var(--accent-strong);
+  box-shadow: var(--glow);
 }
 
 .event-detail__button:disabled {

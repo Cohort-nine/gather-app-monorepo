@@ -1,12 +1,14 @@
 import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./components/Home";
 import NavBar from "./components/NavBar";
+import ConnectionsPage from "./pages/ConnectionsPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import EventFormPage from "./pages/EventFormPage";
 import EventsPage from "./pages/EventsPage";
 import LoginPage from "./pages/LoginPage";
 import MyEventsPage from "./pages/MyEventsPage";
 import MyRsvpsPage from "./pages/MyRsvpsPage";
+import ProfilePage from "./pages/ProfilePage";
 import SignupPage from "./pages/SignupPage";
 
 export default function App() {
@@ -31,6 +33,8 @@ export default function App() {
         <Route path="/events/:id/edit" element={<EventFormPage />} />
         <Route path="/my-events" element={<MyEventsPage />} />
         <Route path="/my-rsvps" element={<MyRsvpsPage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/connections" element={<ConnectionsPage />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

@@ -1,8 +1,10 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import multer from "multer";
 import apiRoutes from "./routes/index.js";
 import { buildCorsOptions, describeCorsPolicy } from "./lib/cors.js";
+import { UPLOAD_DIR } from "./lib/upload.js";
 
 dotenv.config();
 
@@ -14,6 +16,11 @@ const port = Number(process.env.PORT) || 3001;
 app.use(cors(buildCorsOptions()));
 app.use(express.json());
 
+// Avatars and event cover images, written by server/lib/upload.js. Known to
+// be ephemeral on Render's free tier (the disk doesn't survive a redeploy) —
+// an accepted tradeoff for this project, not a bug to fix here.
+app.use("/uploads", express.static(UPLOAD_DIR));
+
 app.use("/api", apiRoutes);
 
 // Unknown route -> 404 JSON, not Express's default HTML page. The frontend
@@ -24,6 +31,20 @@ app.use((req, res) => {
 
 app.use((err, _req, res, _next) => {
   console.error(err);
+
+  // multer errors (oversized file, too many files, etc.) and our own
+  // magic-byte / mime-type rejections from server/lib/upload.js are both
+  // client mistakes, not server failures — same envelope as any other 400.
+  if (err instanceof multer.MulterError) {
+    const message =
+      err.code === "LIMIT_FILE_SIZE"
+        ? "Image must be 5MB or smaller."
+        : "Image upload failed.";
+    return res.status(400).json({ message, errors: [err.message] });
+  }
+  if (err.isUploadValidation) {
+    return res.status(400).json({ message: err.message, errors: [err.message] });
+  }
 
   // Translate the Prisma errors a client can actually cause into useful status
   // codes. Anything else is genuinely our fault and stays a 500.

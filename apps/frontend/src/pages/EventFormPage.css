@@ -20,6 +20,91 @@
   margin-top: 0.5rem;
 }
 
+.event-form__image {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.event-form__image-preview {
+  width: 160px;
+  height: 90px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid var(--panel-border);
+  flex-shrink: 0;
+}
+
+.event-form__image-placeholder {
+  width: 160px;
+  height: 90px;
+  border-radius: 10px;
+  border: 1px dashed var(--surface-border);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+.event-form__image-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.event-form__image-controls small {
+  color: var(--muted);
+}
+
+/* A styled label standing in for the file input — <input type="file"> can't
+   be restyled directly, so it's visually hidden and the label carries the
+   look of a normal secondary button. */
+.event-form__image-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--surface-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  background: var(--surface-bg);
+  color: var(--color-ink);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.event-form__image-button:hover {
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+.event-form__image-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.event-form__image-clear {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--muted);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.event-form__image-clear:hover {
+  color: var(--color-ink);
+}
+
 /* Side-by-side on wide screens, stacked on phones. Dates especially read
    better as a pair — start and end belong together. */
 .event-form__row {

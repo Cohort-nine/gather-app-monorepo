@@ -9,6 +9,26 @@
   --nav-h: 64px;
   --font-display: 'Google Sans', 'Product Sans', 'Poppins', system-ui, sans-serif;
 
+  /* The hero is always dark, regardless of the site-wide theme toggle — it's
+     built around a video, not a themeable surface. FriendsEventsSection
+     (below the hero) reuses the same shared card/EventCard tokens the rest
+     of the app themes globally (--panel-bg, --accent, etc.), so without this
+     override, toggling the app to light mode would flip those cards light
+     while sitting under a permanently-dark hero. Locking them to the same
+     dark values as :root's defaults keeps the whole page one visual piece. */
+  --color-ink: #E6EEF2;
+  --panel-bg: rgba(255, 255, 255, 0.03);
+  --panel-border: rgba(255, 255, 255, 0.06);
+  --surface-bg: rgba(255, 255, 255, 0.02);
+  --surface-border: rgba(255, 255, 255, 0.06);
+  --accent: #F5F5F5;
+  --accent-strong: #FFFFFF;
+  --accent-ink: #0b0d0f;
+  --muted: #9ca3af;
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --glow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 0 20px rgba(255, 255, 255, 0.22),
+    0 0 48px rgba(255, 255, 255, 0.1);
+
   background: var(--ink);
   color: var(--paper);
   min-height: 100vh;

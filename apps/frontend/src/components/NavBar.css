@@ -99,33 +99,65 @@
 }
 
 /* The active section is marked three ways — colour, weight, and an underline —
-   so it never depends on colour alone. */
+   so it never depends on colour alone. Brightness + glow carry the emphasis
+   that used to come from an accent hue. */
 .nav__link.active {
-  color: var(--accent);
+  color: var(--accent-strong);
   background: color-mix(in srgb, var(--accent) 14%, transparent);
   box-shadow: inset 0 -2px 0 var(--accent);
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+}
+
+.theme-light .nav__link.active {
+  text-shadow: none;
 }
 
 .nav__link--cta {
   background: var(--accent);
-  color: #ffffff;
+  color: var(--accent-ink);
 }
 
 .nav__link--cta:hover,
 .nav__link--cta.active {
   background: var(--accent-strong);
-  color: #ffffff;
-  box-shadow: none;
+  color: var(--accent-ink);
+  box-shadow: var(--glow);
 }
 
 .nav__handle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--muted);
+  text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
   max-width: 14ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.nav__handle:hover {
+  color: var(--color-ink);
+}
+
+.nav__handle-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.nav__handle-avatar--placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  color: var(--color-ink);
+  font-size: 0.6rem;
+  font-weight: 700;
 }
 
 .nav__signout {

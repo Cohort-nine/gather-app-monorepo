@@ -1,16 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchCategories, fetchEvents, rsvpToEvent } from "../api/events.js";
+import { fetchCategories, fetchEvents } from "../api/events.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useEventRsvp } from "../lib/useEventRsvp.js";
+import EventCard from "../components/EventCard.jsx";
 import "./EventsPage.css";
-
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-  hour: "numeric",
-  minute: "2-digit"
-});
 
 export default function EventsPage() {
   const { user } = useAuth();
@@ -20,9 +14,12 @@ export default function EventsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [waking, setWaking] = useState(false);
-  const [rsvpMessage, setRsvpMessage] = useState({});
-  const [rsvpStatus, setRsvpStatus] = useState({});
-  const [justConfirmed, setJustConfirmed] = useState(null);
+
+  function patchEvent(eventId, updater) {
+    setEvents((current) => current.map((event) => (event.id === eventId ? updater(event) : event)));
+  }
+
+  const { rsvpMessage, rsvpStatus, justConfirmed, handleRsvp } = useEventRsvp(patchEvent);
 
   useEffect(() => {
     fetchCategories()
@@ -48,41 +45,6 @@ export default function EventsPage() {
   function handleFilterChange(event) {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
-  }
-
-  async function handleRsvp(eventId) {
-    setRsvpMessage((current) => ({ ...current, [eventId]: "Saving..." }));
-    try {
-      const res = await rsvpToEvent(eventId);
-      const status = res.data.rsvp.status;
-      setRsvpStatus((current) => ({ ...current, [eventId]: status }));
-
-      // Patched locally rather than refetched: the list endpoint doesn't
-      // return "did I RSVP" per event, so a refetch wouldn't even show this
-      // confirmation — and the response already told us exactly what changed.
-      if (status === "going") {
-        setEvents((current) =>
-          current.map((event) => {
-            if (event.id !== eventId) return event;
-            const spotsLeft = event.spotsLeft === null ? null : Math.max(0, event.spotsLeft - 1);
-            return { ...event, goingCount: event.goingCount + 1, spotsLeft, isFull: spotsLeft === 0 };
-          })
-        );
-
-        setJustConfirmed(eventId);
-        setTimeout(() => setJustConfirmed((current) => (current === eventId ? null : current)), 650);
-      }
-
-      // A small identity nudge, not a lecture — only for confirmed RSVPs, and
-      // only once we actually know their standing.
-      const encouragement =
-        status === "going" && user?.reliability
-          ? " Showing up like this is what keeps your reliability score strong."
-          : "";
-      setRsvpMessage((current) => ({ ...current, [eventId]: `${res.message}${encouragement}` }));
-    } catch (err) {
-      setRsvpMessage((current) => ({ ...current, [eventId]: err.message }));
-    }
   }
 
   return (
@@ -135,84 +97,31 @@ export default function EventsPage() {
       ) : null}
 
       {loading ? (
-        <ul className="event-list" aria-hidden="true" aria-label="Loading events">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <ul className="event-grid" aria-hidden="true" aria-label="Loading events">
+          {Array.from({ length: 6 }).map((_, i) => (
             <li key={i} className="event-card event-card--skeleton">
-              <div className="skeleton-line skeleton-line--title" />
-              <div className="skeleton-line" />
-              <div className="skeleton-line skeleton-line--short" />
+              <div className="event-card__media event-card__media--skeleton" />
+              <div className="event-card__body">
+                <div className="skeleton-line skeleton-line--title" />
+                <div className="skeleton-line" />
+                <div className="skeleton-line skeleton-line--short" />
+              </div>
             </li>
           ))}
         </ul>
       ) : events.length === 0 && !error ? (
         <p className="status">No events matched your filters.</p>
       ) : (
-        <ul className="event-list">
+        <ul className="event-grid">
           {events.map((event) => (
-            <li key={event.id} className="event-card">
-              <div className="event-card__header">
-                {/* The whole point of the detail page — cards were previously
-                    dead ends with no way through. */}
-                <h3>
-                  <Link to={`/events/${event.id}`}>{event.title}</Link>
-                </h3>
-                {event.category ? <span>{event.category.name}</span> : null}
-              </div>
-
-              <p className="event-card__meta">
-                {dateFormatter.format(new Date(event.startsAt))}
-                {" · "}
-                {event.isOnline ? "Online" : event.city || "Location TBD"}
-                {" · "}
-                hosted by {event.host.displayName}
-              </p>
-
-              <p
-                className={`event-card__meta ${
-                  !event.isFull && event.spotsLeft !== null && event.spotsLeft > 0 && event.spotsLeft <= 3
-                    ? "text-urgent"
-                    : ""
-                }`}
-              >
-                {event.isFull
-                  ? "Full"
-                  : event.spotsLeft === null
-                    ? `${event.goingCount} going`
-                    : `${event.spotsLeft} spot(s) left`}
-              </p>
-
-              {/* Hosting your own event isn't an RSVP — the API rejects it, so
-                  offer the useful action instead of a button that 409s. */}
-              <div className="event-card__actions">
-                <Link to={`/events/${event.id}`}>View details</Link>
-
-                {user && event.host.id === user.id ? (
-                  <Link to={`/events/${event.id}/edit`}>Edit your event</Link>
-                ) : rsvpStatus[event.id] === "going" ? (
-                  <span
-                    className={`event-card__confirmed ${
-                      justConfirmed === event.id ? "confirm-pulse" : ""
-                    }`}
-                  >
-                    ✓ You're going
-                  </span>
-                ) : rsvpStatus[event.id] === "waitlisted" ? (
-                  <span className="event-card__confirmed event-card__confirmed--waitlist">
-                    On the waitlist
-                  </span>
-                ) : user ? (
-                  <button type="button" onClick={() => handleRsvp(event.id)}>
-                    RSVP
-                  </button>
-                ) : (
-                  <Link to="/login">Sign in to RSVP</Link>
-                )}
-              </div>
-
-              {rsvpMessage[event.id] ? (
-                <p className="status">{rsvpMessage[event.id]}</p>
-              ) : null}
-            </li>
+            <EventCard
+              key={event.id}
+              event={event}
+              rsvpStatus={rsvpStatus[event.id]}
+              rsvpMessage={rsvpMessage[event.id]}
+              justConfirmed={justConfirmed === event.id}
+              onRsvp={handleRsvp}
+            />
           ))}
         </ul>
       )}

@@ -1,9 +1,11 @@
 // ---------------------------------------------------------------------------
-// Auth — signup, login, and "who am I"
+// Auth — signup, login, "who am I", and account-settings changes
 //
-// POST /api/auth/signup
-// POST /api/auth/login
-// GET  /api/auth/me
+// POST  /api/auth/signup
+// POST  /api/auth/login
+// GET   /api/auth/me
+// PATCH /api/auth/password  change the signed-in user's password
+// PATCH /api/auth/email     change the signed-in user's login email
 //
 // Rule followed throughout: passwordHash never leaves this file. Every response
 // runs through publicUser().
@@ -16,7 +18,7 @@ const HANDLE_RE = /^[a-z0-9_]{3,30}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** The only shape of a user that's ever sent to a client. */
-const publicUser = (u) => ({
+export const publicUser = (u) => ({
   id: u.id,
   handle: u.handle,
   email: u.email,
@@ -26,6 +28,21 @@ const publicUser = (u) => ({
   homeCity: u.homeCity,
   joinedAt: u.joinedAt
 });
+
+// Shared by signup and changePassword so the two never drift apart. Length is
+// the property that actually matters — composition rules push people toward
+// "Password1!", which is predictable and no harder to crack.
+function passwordStrengthErrors(password, field = "password") {
+  const errors = [];
+  if (!password) {
+    errors.push(`${field} is required`);
+  } else {
+    if (password.length < 10) errors.push(`${field} must be at least 10 characters`);
+    if (password.length > 200) errors.push(`${field} must be under 200 characters`);
+    if (/^\d+$/.test(password)) errors.push(`${field} cannot be only numbers`);
+  }
+  return errors;
+}
 
 function validateSignup({ handle, email, password, displayName }) {
   const errors = [];
@@ -44,15 +61,7 @@ function validateSignup({ handle, email, password, displayName }) {
     errors.push("displayName must be at least 2 characters");
   }
 
-  if (!password) {
-    errors.push("password is required");
-  } else {
-    // Length is the property that actually matters. Composition rules push
-    // people toward "Password1!" — predictable, and no harder to crack.
-    if (password.length < 10) errors.push("password must be at least 10 characters");
-    if (password.length > 200) errors.push("password must be under 200 characters");
-    if (/^\d+$/.test(password)) errors.push("password cannot be only numbers");
-  }
+  errors.push(...passwordStrengthErrors(password));
 
   return errors;
 }
@@ -191,4 +200,110 @@ export async function me(req, res, next) {
  */
 export async function logout(_req, res) {
   res.json({ message: "Signed out. Discard the token on the client." });
+}
+
+/**
+ * PATCH /api/auth/password
+ *
+ * Requires the current password so nobody can change it just by grabbing a
+ * signed-in browser tab or a leaked token — same "prove you know the old
+ * secret" reasoning as any account-settings password change.
+ */
+export async function changePassword(req, res, next) {
+  const { currentPassword, newPassword } = req.body;
+
+  const errors = [];
+  if (!currentPassword) errors.push("currentPassword is required");
+  errors.push(...passwordStrengthErrors(newPassword, "newPassword"));
+
+  if (errors.length) {
+    return res.status(400).json({ message: "Validation failed", errors });
+  }
+
+  try {
+    // req.user (from requireAuth) is the trimmed select used for every
+    // request — it doesn't carry passwordHash, so re-fetch the full row.
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ message: "Current password is incorrect." });
+    }
+
+    const ok = await verifyPassword(currentPassword, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Current password is incorrect." });
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await hashPassword(newPassword) }
+    });
+
+    res.json({ message: "Password updated successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PATCH /api/auth/email
+ *
+ * Also requires the current password, for the same identity-confirmation
+ * reason as changePassword — the login email is effectively a second factor
+ * for account recovery, so changing it needs the same proof of ownership.
+ */
+export async function changeEmail(req, res, next) {
+  const { currentPassword, newEmail } = req.body;
+
+  const errors = [];
+  if (!currentPassword) errors.push("currentPassword is required");
+  if (!newEmail) errors.push("newEmail is required");
+  else if (!EMAIL_RE.test(newEmail)) errors.push("newEmail must be a valid email address");
+
+  if (errors.length) {
+    return res.status(400).json({ message: "Validation failed", errors });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user || !user.passwordHash) {
+      return res.status(401).json({ message: "Current password is incorrect." });
+    }
+
+    const ok = await verifyPassword(currentPassword, user.passwordHash);
+    if (!ok) return res.status(401).json({ message: "Current password is incorrect." });
+
+    // email is citext, so this catches "Maya@x.com" vs "maya@x.com" too.
+    // Checked up front (same pattern as signup) so the common case gets a
+    // clean, field-specific message instead of a raw DB error.
+    const existing = await prisma.user.findFirst({
+      where: { email: newEmail, id: { not: user.id } },
+      select: { id: true }
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        message: "That email is already registered to another account.",
+        errors: ["email is already registered"]
+      });
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { email: newEmail }
+    });
+
+    res.json({ message: "Email updated successfully", data: publicUser(updated) });
+  } catch (error) {
+    // Race-condition safety net: two requests could both pass the check above
+    // before either commits. The database's own unique constraint is the real
+    // guarantee — this just keeps its error from leaking through as a raw
+    // Prisma error instead of the same clean message used above.
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        message: "That email is already registered to another account.",
+        errors: ["email is already registered"]
+      });
+    }
+    next(error);
+  }
 }
