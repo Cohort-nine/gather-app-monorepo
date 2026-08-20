@@ -73,12 +73,13 @@ export default function MyEventsPage() {
     setError("");
     fetchMyEvents()
       .then((res) => {
-        setEvents(res.data);
+        const data = res.data ?? [];
+        setEvents(data);
 
         // Confetti is for a real milestone — a gathering that actually
         // happened — not routine page loads, so it only fires for a
         // completed event this browser hasn't already celebrated.
-        const completed = res.data.filter((event) => event.status === "completed");
+        const completed = data.filter((event) => event.status === "completed");
         const seen = getSeenCompletions();
         const newlyCompleted = completed.find((event) => !seen.has(event.id));
 

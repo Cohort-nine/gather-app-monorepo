@@ -1,11 +1,11 @@
 import { apiFetch } from "./client.js";
 
-export const fetchEvents = (params = {}) => {
+export const fetchEvents = (params = {}, options = {}) => {
   const query = new URLSearchParams(
     Object.entries(params).filter(([, value]) => value !== undefined && value !== "")
   ).toString();
 
-  return apiFetch(`/events${query ? `?${query}` : ""}`, { auth: false });
+  return apiFetch(`/events${query ? `?${query}` : ""}`, { auth: false, ...options });
 };
 
 /**

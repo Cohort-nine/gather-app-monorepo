@@ -19,23 +19,30 @@ export default function EventsPage() {
   const [filters, setFilters] = useState({ search: "", category: "", sort: "soonest" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [waking, setWaking] = useState(false);
   const [rsvpMessage, setRsvpMessage] = useState({});
   const [rsvpStatus, setRsvpStatus] = useState({});
   const [justConfirmed, setJustConfirmed] = useState(null);
 
   useEffect(() => {
     fetchCategories()
-      .then((res) => setCategories(res.data))
+      // `?? []` is not paranoia: a response without `data` used to set this to
+      // undefined and the `.map()` below threw, taking the whole app down.
+      .then((res) => setCategories(res.data ?? []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    fetchEvents(filters)
-      .then((res) => setEvents(res.data))
+    setWaking(false);
+    fetchEvents(filters, { onWaking: () => setWaking(true) })
+      .then((res) => setEvents(res.data ?? []))
       .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        setWaking(false);
+      });
   }, [filters]);
 
   function handleFilterChange(event) {
@@ -119,6 +126,15 @@ export default function EventsPage() {
       </section>
 
       {error ? <p className="status status--error">{error}</p> : null}
+
+      {/* A cold start is 30-60s of nothing. Saying so beats four skeleton cards
+          that look frozen. role="status" announces it without stealing focus. */}
+      {waking ? (
+        <p className="status" role="status">
+          Waking the server up — the free hosting tier sleeps when it's idle, so
+          this first load can take up to a minute.
+        </p>
+      ) : null}
 
       {loading ? (
         <ul className="event-list" aria-hidden="true" aria-label="Loading events">
