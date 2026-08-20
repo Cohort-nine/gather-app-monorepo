@@ -89,14 +89,12 @@ export default function EventsPage() {
     <main className="page">
       <section className="panel">
         <p className="eyebrow">Gather</p>
+        {/* "Your events" and "Host a gathering" used to sit here too. They were
+            added before the persistent nav existed; now they are the same two
+            destinations offered twice on one screen, which just makes the user
+            decide between identical options. The nav owns them. */}
         <div className="events-heading">
           <h1>Browse gatherings</h1>
-          {user ? (
-            <span className="events-heading__links">
-              <Link to="/my-events">Your events</Link>
-              <Link to="/events/new">Host a gathering</Link>
-            </span>
-          ) : null}
         </div>
 
         <form className="events-filters" onSubmit={(e) => e.preventDefault()}>

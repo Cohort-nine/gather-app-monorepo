@@ -170,12 +170,6 @@
   margin: 0;
 }
 
-.events-heading__links {
-  display: flex;
-  gap: 1.25rem;
-  font-weight: 600;
-}
-
 @media (max-width: 600px) {
   .events-heading {
     flex-direction: column;

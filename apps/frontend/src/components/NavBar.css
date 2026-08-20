@@ -12,28 +12,33 @@
   backdrop-filter: saturate(180%) blur(8px);
 }
 
-/* Three tracks: wordmark far left, logo dead-center (auto-sized, so it stays
-   pinned to the middle regardless of how wide the left/right tracks get),
-   links + account sharing the right track. Same centering technique as the
-   homepage's own nav (Home.css .home__nav), so the logo holds the same
-   position handed off from the intro.
+/* Brand left, everything else right. A plain flex row, deliberately.
 
-   The two flanking tracks are minmax(0, 1fr), not plain 1fr. Plain 1fr has an
-   implicit auto (min-content) floor — once signed in, the right track's
-   min-content (four nav links + handle + badge + sign-out + theme toggle) is
-   wider than its fair half-share, so it was forcing itself wider than the
-   left track and dragging the "centered" logo off-centre into the button
-   row. minmax(0, 1fr) lets a track shrink below its content's natural width
-   instead, so .nav__right wraps onto a second line within its own column
-   rather than ever pushing the logo. */
+   The previous three-track grid centred the logo by giving the flanking tracks
+   an equal share. The trap: `justify-self` on a grid item sizes that item to
+   its own max-content rather than stretching it to the track, so .nav__right
+   measured 805px inside a 491px track and overflowed *leftward* — printing the
+   account row straight over the centred logo. flex-wrap never got a chance to
+   help, because the element was never constrained in the first place. */
 .nav__inner {
   max-width: 1080px;
   margin: 0 auto;
   padding: 10px 16px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 8px 20px;
+}
+
+/* Never shrinks — the brand is the one thing that should still be there when
+   everything else has wrapped away. */
+.nav__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  text-decoration: none;
 }
 
 .nav__wordmark {
@@ -44,12 +49,6 @@
   text-transform: uppercase;
   color: var(--color-ink);
   text-decoration: none;
-  justify-self: start;
-}
-
-.nav__logo-link {
-  display: flex;
-  justify-self: center;
 }
 
 .nav__logo {
@@ -58,13 +57,15 @@
   color: var(--accent);
 }
 
+/* min-width: 0 plus flex-wrap is what actually lets this wrap onto a second
+   line when the window is too narrow, instead of overflowing its neighbour. */
 .nav__right {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 8px 20px;
-  justify-self: end;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -144,24 +145,20 @@
 }
 
 @media (max-width: 720px) {
-  /* The grid's three-way split doesn't have room on a phone — drop to a
-     wrapping flex row instead. The wordmark is dropped entirely (the logo
-     alone is the compact mark) rather than centered, since centering it
-     between a squeezed left/right side would just make it drift. */
   .nav__inner {
-    display: flex;
-    flex-wrap: wrap;
     gap: 8px 12px;
     padding: 10px 12px;
   }
 
+  /* The logo alone is the compact mark — the word costs horizontal room that
+     the section links need more. */
   .nav__wordmark {
     display: none;
   }
 
   /* Logo and account on the top row, section links on their own row below —
      keeps every target full size instead of shrinking them to fit. */
-  .nav__logo-link {
+  .nav__brand {
     order: 1;
   }
 
