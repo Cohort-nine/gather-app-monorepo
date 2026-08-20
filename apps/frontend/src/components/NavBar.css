@@ -16,22 +16,32 @@
    pinned to the middle regardless of how wide the left/right tracks get),
    links + account sharing the right track. Same centering technique as the
    homepage's own nav (Home.css .home__nav), so the logo holds the same
-   position handed off from the intro. */
+   position handed off from the intro.
+
+   The two flanking tracks are minmax(0, 1fr), not plain 1fr. Plain 1fr has an
+   implicit auto (min-content) floor — once signed in, the right track's
+   min-content (four nav links + handle + badge + sign-out + theme toggle) is
+   wider than its fair half-share, so it was forcing itself wider than the
+   left track and dragging the "centered" logo off-centre into the button
+   row. minmax(0, 1fr) lets a track shrink below its content's natural width
+   instead, so .nav__right wraps onto a second line within its own column
+   rather than ever pushing the logo. */
 .nav__inner {
   max-width: 1080px;
   margin: 0 auto;
   padding: 10px 16px;
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  gap: 20px;
+  gap: 8px 20px;
 }
 
 .nav__wordmark {
   font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 800;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--color-ink);
   text-decoration: none;
   justify-self: start;
@@ -50,16 +60,19 @@
 
 .nav__right {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 20px;
+  gap: 8px 20px;
   justify-self: end;
   min-width: 0;
 }
 
 .nav__links {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 4px;
 }
 
