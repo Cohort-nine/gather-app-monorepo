@@ -1,7 +1,7 @@
 /* Root styles + theme variables
    Default: dark mode. Add .theme-light on <html> to switch to light theme. */
 :root {
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   /* The homepage hero uses this for GATHER and its own nav wordmark — carrying
      it onto every page's h1 is what makes the text-only pages still read as
      the same brand instead of falling back to a generic app UI once the
@@ -16,8 +16,8 @@
   --panel-border: rgba(255,255,255,0.06);
   --surface-bg: rgba(255,255,255,0.02);
   --surface-border: rgba(255,255,255,0.06);
-  --accent: #60a5fa;           /* blue accent tuned for dark */
-  --accent-strong: #93c5fd;    /* hover/emphasis — lighter reads as "brighter" on dark */
+  --accent: #A78BFA;            /* violet — echoes the intro's dark/premium feel instead of a generic UI blue */
+  --accent-strong: #C4B5FD;    /* hover/emphasis — lighter reads as "brighter" on dark */
   --muted: #94a3b8;
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
 }
@@ -31,8 +31,8 @@
   --panel-border: #d1d5db;
   --surface-bg: #ffffff;
   --surface-border: #cbd5e1;
-  --accent: #2563eb;
-  --accent-strong: #1d4ed8;    /* hover/emphasis — darker reads as "stronger" on light */
+  --accent: #7C3AED;
+  --accent-strong: #6D28D9;    /* hover/emphasis — darker reads as "stronger" on light */
   --muted: #6b7280;
   --shadow: 0 10px 30px rgba(15,23,42,0.06);
 }

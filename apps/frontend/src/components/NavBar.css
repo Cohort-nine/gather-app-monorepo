@@ -12,49 +12,61 @@
   backdrop-filter: saturate(180%) blur(8px);
 }
 
+/* Three tracks: wordmark far left, logo dead-center (auto-sized, so it stays
+   pinned to the middle regardless of how wide the left/right tracks get),
+   links + account sharing the right track. Same centering technique as the
+   homepage's own nav (Home.css .home__nav), so the logo holds the same
+   position handed off from the intro. */
 .nav__inner {
   max-width: 1080px;
   margin: 0 auto;
   padding: 10px 16px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 20px;
-}
-
-.nav__brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--accent);
-  text-decoration: none;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  flex: 0 0 auto;
-}
-
-.nav__logo {
-  width: 26px;
-  height: 26px;
 }
 
 .nav__wordmark {
   font-family: var(--font-display);
   font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
   color: var(--color-ink);
+  text-decoration: none;
+  justify-self: start;
+}
+
+.nav__logo-link {
+  display: flex;
+  justify-self: center;
+}
+
+.nav__logo {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
+}
+
+.nav__right {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+  justify-self: end;
+  min-width: 0;
 }
 
 .nav__links {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1 1 auto;
 }
 
 .nav__account {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex: 0 0 auto;
 }
 
 .nav__link {
@@ -119,16 +131,31 @@
 }
 
 @media (max-width: 720px) {
+  /* The grid's three-way split doesn't have room on a phone — drop to a
+     wrapping flex row instead. The wordmark is dropped entirely (the logo
+     alone is the compact mark) rather than centered, since centering it
+     between a squeezed left/right side would just make it drift. */
   .nav__inner {
+    display: flex;
     flex-wrap: wrap;
     gap: 8px 12px;
     padding: 10px 12px;
   }
 
-  /* Brand and account on the top row, section links on their own row below —
+  .nav__wordmark {
+    display: none;
+  }
+
+  /* Logo and account on the top row, section links on their own row below —
      keeps every target full size instead of shrinking them to fit. */
-  .nav__brand {
+  .nav__logo-link {
     order: 1;
+  }
+
+  /* Breaks .nav__right apart so its two children rejoin the parent's own
+     flex-wrap ordering below, instead of staying boxed together as one item. */
+  .nav__right {
+    display: contents;
   }
 
   .nav__account {
@@ -146,10 +173,6 @@
   }
 
   .nav__links::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav__wordmark {
     display: none;
   }
 

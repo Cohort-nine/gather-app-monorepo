@@ -32,60 +32,68 @@ export default function NavBar() {
   return (
     <header className="nav">
       <div className="nav__inner">
-        <Link className="nav__brand" to="/" aria-label="Gather home">
-          <GatherLogo className="nav__logo" />
-          <span className="nav__wordmark">Gather</span>
+        {/* Name far left, logo dead-center — mirrors where the intro lands its
+            logo, so the mark reads as the same anchor point once the intro
+            hands off to this persistent bar on every other page. */}
+        <Link className="nav__wordmark" to="/">
+          Gather
         </Link>
 
-        <nav className="nav__links" aria-label="Main">
-          <NavLink to="/events" className="nav__link">
-            Browse
-          </NavLink>
+        <Link className="nav__logo-link" to="/" aria-label="Gather home">
+          <GatherLogo className="nav__logo" />
+        </Link>
 
-          {user ? (
-            <>
-              <NavLink to="/my-rsvps" className="nav__link">
-                Your RSVPs
-              </NavLink>
-              <NavLink to="/my-events" className="nav__link">
-                Your events
-              </NavLink>
-              <NavLink to="/events/new" className="nav__link nav__link--cta">
-                Host a gathering
-              </NavLink>
-            </>
-          ) : null}
-        </nav>
+        <div className="nav__right">
+          <nav className="nav__links" aria-label="Main">
+            <NavLink to="/events" className="nav__link">
+              Browse
+            </NavLink>
 
-        <div className="nav__account">
-          {user ? (
-            <>
-              <span className="nav__handle" title={user.displayName}>
-                @{user.handle}
-              </span>
-              {user.reliability ? (
-                <span
-                  className={`reliability-badge reliability-badge--${user.reliability.band}`}
-                  title="Your reliability score — built from RSVPs you honored vs. missed"
-                >
-                  {reliabilityLabel(user.reliability.band)}
+            {user ? (
+              <>
+                <NavLink to="/my-rsvps" className="nav__link">
+                  Your RSVPs
+                </NavLink>
+                <NavLink to="/my-events" className="nav__link">
+                  Your events
+                </NavLink>
+                <NavLink to="/events/new" className="nav__link nav__link--cta">
+                  Host a gathering
+                </NavLink>
+              </>
+            ) : null}
+          </nav>
+
+          <div className="nav__account">
+            {user ? (
+              <>
+                <span className="nav__handle" title={user.displayName}>
+                  @{user.handle}
                 </span>
-              ) : null}
-              <button type="button" className="nav__signout" onClick={handleSignOut}>
-                Sign out
-              </button>
-            </>
-          ) : (
-            <>
-              <NavLink to="/login" className="nav__link">
-                Sign in
-              </NavLink>
-              <NavLink to="/signup" className="nav__link nav__link--cta">
-                Sign up
-              </NavLink>
-            </>
-          )}
-          <ThemeToggle />
+                {user.reliability ? (
+                  <span
+                    className={`reliability-badge reliability-badge--${user.reliability.band}`}
+                    title="Your reliability score — built from RSVPs you honored vs. missed"
+                  >
+                    {reliabilityLabel(user.reliability.band)}
+                  </span>
+                ) : null}
+                <button type="button" className="nav__signout" onClick={handleSignOut}>
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login" className="nav__link">
+                  Sign in
+                </NavLink>
+                <NavLink to="/signup" className="nav__link nav__link--cta">
+                  Sign up
+                </NavLink>
+              </>
+            )}
+            <ThemeToggle />
+          </div>
         </div>
       </div>
     </header>
