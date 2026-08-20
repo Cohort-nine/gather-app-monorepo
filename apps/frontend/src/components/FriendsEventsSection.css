@@ -1,0 +1,26 @@
+.friends-events {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 48px 24px 24px;
+}
+
+.friends-events__heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 20px;
+}
+
+.friends-events__heading h2 {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2.8vw, 30px);
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.friends-events .status {
+  color: var(--muted);
+  line-height: 1.6;
+}

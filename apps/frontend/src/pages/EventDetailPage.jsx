@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { resolveMediaUrl } from "../api/client.js";
 import { cancelRsvp, fetchEvent, rsvpToEvent } from "../api/events.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./EventDetailPage.css";
@@ -154,6 +155,12 @@ export default function EventDetailPage() {
       </p>
 
       <section className="panel">
+        {event.imageUrl ? (
+          <div className="event-detail__cover">
+            <img src={resolveMediaUrl(event.imageUrl)} alt="" />
+          </div>
+        ) : null}
+
         <div className="event-detail__header">
           <div>
             {event.category ? (

@@ -45,8 +45,12 @@ export default function SignupPage() {
               value={form.handle}
               onChange={handleChange}
               placeholder="lowercase_letters_numbers"
+              pattern="[a-z0-9_]{3,30}"
+              minLength={3}
+              maxLength={30}
               required
             />
+            <small>3–30 characters: lowercase letters, numbers, and underscores only.</small>
           </label>
 
           <label>
@@ -75,6 +79,7 @@ export default function SignupPage() {
               minLength={10}
               required
             />
+            <small>At least 10 characters, and not just numbers.</small>
           </label>
 
           {error ? <p className="status status--error">{error}</p> : null}

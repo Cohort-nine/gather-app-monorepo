@@ -5,10 +5,28 @@ import {
   deleteEvent,
   fetchCategories,
   fetchEvent,
-  updateEvent
+  updateEvent,
+  uploadEventImage
 } from "../api/events.js";
+import { resolveMediaUrl } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./EventFormPage.css";
+
+// Mirrors the backend's multer validation (image/jpeg, image/png, image/webp;
+// 5MB cap) — checking client-side means a host finds out their file is too
+// big before a round trip, not after one.
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const IMAGE_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function validateImageFile(file) {
+  if (!IMAGE_MIME_TYPES.includes(file.type)) {
+    return "Cover photo must be a JPEG, PNG, or WebP image.";
+  }
+  if (file.size > IMAGE_MAX_BYTES) {
+    return "Cover photo must be under 5MB.";
+  }
+  return null;
+}
 
 // ---------------------------------------------------------------------------
 // One component serves both /events/new and /events/:id/edit.
@@ -155,6 +173,18 @@ export default function EventFormPage() {
   const [errors, setErrors] = useState([]);
   const [notice, setNotice] = useState("");
   const [existingStatus, setExistingStatus] = useState(null);
+  const [existingImageUrl, setExistingImageUrl] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
+  const [imageError, setImageError] = useState("");
+
+  // The preview is a blob: URL created in handleImageChange — it isn't
+  // garbage-collected on its own, so it has to be released explicitly.
+  useEffect(() => {
+    return () => {
+      if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    };
+  }, [imagePreviewUrl]);
 
   useEffect(() => {
     fetchCategories()
@@ -170,6 +200,7 @@ export default function EventFormPage() {
       .then((res) => {
         const event = res.data;
         setExistingStatus(event.status);
+        setExistingImageUrl(event.imageUrl ?? null);
         setForm({
           title: event.title ?? "",
           description: event.description ?? "",
@@ -203,6 +234,37 @@ export default function EventFormPage() {
     setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
   }
 
+  function handleImageChange(event) {
+    const file = event.target.files?.[0];
+    // Clear the input's value even on an invalid pick, so choosing the exact
+    // same (still-bad) file twice in a row fires onChange again instead of
+    // silently no-oping.
+    event.target.value = "";
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setImageError(validationError);
+      return;
+    }
+
+    setImageError("");
+    setImageFile(file);
+    setImagePreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return URL.createObjectURL(file);
+    });
+  }
+
+  function clearImageSelection() {
+    setImageFile(null);
+    setImagePreviewUrl((current) => {
+      if (current) URL.revokeObjectURL(current);
+      return null;
+    });
+    setImageError("");
+  }
+
   async function submit(status) {
     setErrors([]);
     setNotice("");
@@ -219,6 +281,19 @@ export default function EventFormPage() {
     try {
       const payload = buildPayload(form, status);
       const res = isEdit ? await updateEvent(id, payload) : await createEvent(payload);
+
+      // Best-effort: the event itself is already safely saved at this point,
+      // so a cover-photo upload failure shouldn't block navigation or read as
+      // "the save failed" — it wasn't. They can add/retry the photo from the
+      // edit page.
+      if (imageFile) {
+        try {
+          await uploadEventImage(res.data.id, imageFile);
+        } catch (imgErr) {
+          console.error("[gather] cover photo upload failed:", imgErr);
+        }
+      }
+
       navigate(`/my-events?saved=${encodeURIComponent(res.data.title)}`);
     } catch (err) {
       // The API returns { message, errors? } — show the field-level list when
@@ -300,6 +375,47 @@ export default function EventFormPage() {
         {notice ? <p className="status">{notice}</p> : null}
 
         <form className="form event-form" onSubmit={(e) => e.preventDefault()}>
+          <h2>Cover photo</h2>
+
+          <div className="event-form__image">
+            {imagePreviewUrl || existingImageUrl ? (
+              <img
+                className="event-form__image-preview"
+                src={imagePreviewUrl || resolveMediaUrl(existingImageUrl)}
+                alt=""
+              />
+            ) : (
+              <div className="event-form__image-placeholder" aria-hidden="true">
+                No cover photo yet
+              </div>
+            )}
+
+            <div className="event-form__image-controls">
+              <label className="event-form__image-button">
+                {existingImageUrl || imagePreviewUrl ? "Replace photo" : "Choose photo"}
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleImageChange}
+                  className="event-form__image-input"
+                />
+              </label>
+
+              {imagePreviewUrl ? (
+                <button type="button" className="event-form__image-clear" onClick={clearImageSelection}>
+                  Undo selection
+                </button>
+              ) : null}
+
+              <small>
+                JPEG, PNG, or WebP, up to 5MB.
+                {!isEdit ? " Uploaded once you save the event below." : ""}
+              </small>
+
+              {imageError ? <p className="status status--error">{imageError}</p> : null}
+            </div>
+          </div>
+
           <h2>The basics</h2>
 
           <label>

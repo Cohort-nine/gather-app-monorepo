@@ -264,6 +264,9 @@ model Event {
   title       String
   slug        String  @unique
   description String?
+  /// Cover image for event cards/detail pages. Set via POST /events/:id/image,
+  /// after creation — null until a host uploads one.
+  imageUrl    String? @map("image_url")
  
   // Timing. UTC + IANA zone so recurring/local display stays correct.
   startsAt      DateTime  @map("starts_at") @db.Timestamptz(6)

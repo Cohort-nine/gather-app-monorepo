@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import "./ConfettiBurst.css";
 
-const COLORS = ["#60a5fa", "#16a34a", "#d97706", "#f97316", "#a78bfa"];
+// Whites/silvers only, in step with the app's black-and-white brand — no
+// leftover blue/violet from the old accent palette.
+const COLORS = ["#ffffff", "#e5e7eb", "#9ca3af", "#f5f5f5", "#d1d5db"];
 
 function makePieces(count) {
   return Array.from({ length: count }, (_, i) => ({

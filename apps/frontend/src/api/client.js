@@ -24,6 +24,26 @@ export const getToken = () => localStorage.getItem(TOKEN_KEY);
 export const setToken = (token) => localStorage.setItem(TOKEN_KEY, token);
 export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
+// Uploaded images (avatars, event covers) come back from the API as paths
+// relative to the BACKEND's origin (e.g. "/uploads/abc.jpg"), served by
+// express.static — not under /api, and not on the frontend's own origin.
+// Rendered as-is in an <img src>, the browser resolves that path against
+// whatever page it's on: in dev that's Vite's origin (localhost:5173, no
+// such file), and in prod it's Vercel, whose catch-all rewrite serves
+// index.html for literally any unmatched path — so the "image" would
+// silently be an HTML document. Resolving against the API's own origin
+// (stripping the "/api" suffix) is what actually reaches the backend.
+const API_ORIGIN = new URL(API_BASE_URL, window.location.origin).origin;
+
+export function resolveMediaUrl(path) {
+  if (!path) return path;
+  // Already a full/self-contained URL — a local file preview (blob:), an
+  // inline data URI, or already-absolute http(s). Only a bare backend-
+  // relative path like "/uploads/x.jpg" needs the origin prepended.
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
+  return `${API_ORIGIN}${path}`;
+}
+
 // The API is on Render's free tier, which suspends the service after 15 minutes
 // of no traffic. The next request wakes it, and while it boots Render answers
 // with its own "Application loading" HTML page — at status 200, not 503. That
@@ -119,4 +139,50 @@ export async function apiFetch(
 
     return payload;
   }
+}
+
+/**
+ * Same response contract as apiFetch, but for multipart/form-data (image
+ * uploads). Deliberately not folded into apiFetch: that function always sets
+ * Content-Type: application/json and JSON.stringifies the body, which would
+ * corrupt a file upload — a FormData body needs the browser to set its own
+ * Content-Type (with the multipart boundary) instead.
+ *
+ * No cold-start retry here, same reasoning as apiFetch's POST/PUT path:
+ * blindly replaying a file upload risks saving it twice.
+ */
+export async function apiUpload(path, formData, { method = "POST" } = {}) {
+  const headers = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { method, headers, body: formData });
+  } catch (cause) {
+    const error = new Error("Couldn't reach the server. Check your connection and try again.");
+    error.cause = cause;
+    throw error;
+  }
+
+  const text = await response.text();
+  let payload;
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = null;
+  }
+
+  if (payload === null || WAKEABLE_STATUSES.has(response.status)) {
+    throw wakingError();
+  }
+
+  if (!response.ok) {
+    const error = new Error(payload.message || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    error.errors = payload.errors;
+    throw error;
+  }
+
+  return payload;
 }

@@ -33,22 +33,34 @@ Stack:
     │   ├── index.html
     │   ├── vite.config.js
     │   └── src/
-    │       ├── App.jsx                # routes
+    │       ├── App.jsx                 # routes
     │       ├── main.jsx                # BrowserRouter + AuthProvider
-    │       ├── styles.css
+    │       ├── styles.css              # theme tokens (--accent, --glow, etc.) + shared UI
     │       ├── api/
-    │       │   ├── client.js           # fetch wrapper, token storage
-    │       │   ├── auth.js
-    │       │   └── events.js
+    │       │   ├── client.js           # fetch wrapper, token storage, resolveMediaUrl()
+    │       │   ├── auth.js             # signup/login/logout/me, avatar + password/email
+    │       │   ├── events.js
+    │       │   └── connections.js      # search, requests, accept/decline/remove
     │       ├── context/
-    │       │   └── AuthContext.jsx     # session state, login/signup/logout
+    │       │   └── AuthContext.jsx     # session state, login/signup/logout, updateUser()
+    │       ├── lib/
+    │       │   └── useEventRsvp.js     # shared RSVP state/handler for any event list
     │       ├── pages/
-    │       │   ├── EventsPage.jsx      # browse + RSVP
+    │       │   ├── EventsPage.jsx      # browse grid + filters
+    │       │   ├── EventDetailPage.jsx
+    │       │   ├── EventFormPage.jsx   # create/edit, incl. cover photo upload
+    │       │   ├── MyEventsPage.jsx    # events you're hosting
+    │       │   ├── MyRsvpsPage.jsx     # events you're attending
+    │       │   ├── ProfilePage.jsx     # avatar upload, change password/email
+    │       │   ├── ConnectionsPage.jsx # search people, requests, your connections
     │       │   ├── LoginPage.jsx
     │       │   └── SignupPage.jsx
     │       └── components/
-    │           ├── Home.jsx            # marketing homepage
-    │           ├── GatherIntro.jsx     # dot-gather intro animation
+    │           ├── Home.jsx                 # marketing homepage + hero video
+    │           ├── FriendsEventsSection.jsx # "From your friends" — Home, signed-in only
+    │           ├── EventCard.jsx            # the card every event list renders
+    │           ├── MutualAttendees.jsx      # "people you know are going" on a card
+    │           ├── GatherIntro.jsx          # dot-gather intro animation
     │           └── GatherLogo.jsx
     └── backend/
         ├── package.json
@@ -61,19 +73,24 @@ Stack:
         ├── database/
         │   ├── schema.sql               # raw SQL mirror of the schema, for teaching
         │   └── seed.sql
+        ├── uploads/                      # avatar/event images land here (gitignored)
         └── server/
             ├── db/
             │   └── prisma.js
             ├── lib/
             │   ├── auth.js               # JWT + bcrypt helpers, auth middleware
-            │   └── validateEvent.js
+            │   ├── validateEvent.js
+            │   └── upload.js             # multer config, magic-byte type check, file save/delete
             ├── controllers/
-            │   ├── authController.js
-            │   ├── eventController.js
+            │   ├── authController.js     # + password/email change
+            │   ├── userController.js     # avatar upload/delete
+            │   ├── eventController.js    # + event cover image upload
+            │   ├── connectionsController.js
             │   └── rsvpController.js
             ├── routes/
             │   ├── auth.js
             │   ├── events.js
+            │   ├── connections.js
             │   └── index.js
             └── server.js
 ```
@@ -91,6 +108,36 @@ Stack:
   (e.g. `https://*.vercel.app`) so Vercel preview URLs work.
 - Doppler integration for centralized secret management, with fallback to
   local `.env` files for single-developer workflows.
+- **Black-and-white brand** — no hue anywhere in the UI; depth/emphasis comes
+  from `--glow` (a light bleed on dark, a soft shadow ring on light) instead
+  of an accent color. See the `--accent`/`--glow` tokens at the top of
+  `apps/frontend/src/styles.css`.
+- **Event cards as a grid**, each with a cover photo (or a quiet placeholder
+  mark when none is set), the host's avatar, and — if you're signed in and
+  connected to people — a small avatar stack of connections who are already
+  going (`MutualAttendees.jsx`).
+- **Photo uploads** — hosts can attach a single cover photo to an event
+  (`EventFormPage`), and any signed-in user can set a profile avatar
+  (`ProfilePage`). Both are validated server-side by MIME *and* magic bytes
+  (`server/lib/upload.js`) — not just the filename or the client-supplied
+  Content-Type — and capped at 5MB. This is technical validation only
+  (file type/size), **not** content moderation; nothing here detects
+  inappropriate imagery, which would need a third-party API.
+- **Connections** — search for people by handle, send/accept/decline
+  requests (`ConnectionsPage`), and see whichever of your accepted
+  connections are attending a given event.
+- **"From your friends"** on the homepage — upcoming events where at least
+  one of your connections has RSVP'd going, shown only when signed in
+  (`FriendsEventsSection.jsx`).
+- **Account settings** — click your handle/avatar in the nav to reach your
+  profile: replace your avatar, change your password, or change your login
+  email (all require your current password to confirm identity first).
+- Uploaded images are stored on the backend's local disk (`apps/backend/uploads/`,
+  gitignored) and served via `express.static`, the same pattern as this
+  team's other project (Whispers App). This is a known tradeoff: Render's
+  free tier has an **ephemeral filesystem**, so uploaded files don't survive
+  a redeploy. Moving to S3/Cloudinary/similar is the one change needed before
+  this goes live for real.
 
 ## The Gather database design
 
@@ -341,17 +388,30 @@ Available REST API endpoints:
 - `POST   /api/auth/login`
 - `POST   /api/auth/logout`
 - `GET    /api/auth/me`                      (auth required)
+- `PATCH  /api/auth/password`                (auth required — body needs `currentPassword`)
+- `PATCH  /api/auth/email`                   (auth required — body needs `currentPassword`)
 - `GET    /api/categories`
 - `GET    /api/events`                        (search/filter/sort/paginate)
 - `GET    /api/events/:id`
 - `POST   /api/events`                        (auth required)
 - `PUT    /api/events/:id`                    (host/cohost only)
 - `DELETE /api/events/:id`                    (host/cohost only)
+- `POST   /api/events/:id/image`              (host/cohost only — multipart, field `image`)
 - `POST   /api/events/:id/rsvp`               (auth required)
 - `DELETE /api/events/:id/rsvp`               (auth required)
 - `GET    /api/events/:id/rsvps`              (host/cohost only)
 - `POST   /api/events/:id/attendance`         (host/cohost only)
+- `GET    /api/events/:id/mutual-attendees`   (optional auth — empty result if signed out)
 - `GET    /api/me/rsvps`                      (auth required)
+- `GET    /api/me/friends-events`             (auth required — "from your friends" feed)
+- `POST   /api/me/avatar`                     (auth required — multipart, field `avatar`)
+- `DELETE /api/me/avatar`                     (auth required)
+- `GET    /api/users/search?q=`               (auth required — excludes self + blocked)
+- `POST   /api/connections`                   (auth required — body `{ userId }`)
+- `GET    /api/connections?status=`           (auth required)
+- `PATCH  /api/connections/:userId/accept`    (auth required — incoming pending only)
+- `PATCH  /api/connections/:userId/decline`   (auth required)
+- `DELETE /api/connections/:userId`           (auth required — cancel a pending request or unfriend)
 
 Sessions are stateless JWTs. The frontend sends them as
 `Authorization: Bearer <token>`.
@@ -373,14 +433,25 @@ http://localhost:5173
 
 Routes:
 
-- `/` — homepage (intro animation + hero video)
-- `/events` — browse published events, RSVP if signed in
+- `/` — homepage (intro animation + hero video); signed in, also shows
+  "From your friends" below the fold
+- `/events` — browse published events as a card grid, RSVP if signed in
+- `/events/new`, `/events/:id/edit` — host/edit an event, incl. cover photo
+- `/events/:id` — event detail, incl. cover photo and who's going
+- `/my-events` — events you're hosting
+- `/my-rsvps` — events you're attending
+- `/profile` — avatar upload, change password/change login email
+- `/connections` — search people, manage requests, your connections
 - `/login`, `/signup` — auth
 
 Session state lives in `AuthContext` (`apps/frontend/src/context/AuthContext.jsx`),
 backed by a JWT in `localStorage`. `apps/frontend/src/api/` holds the fetch
-wrappers — `client.js` attaches the token and normalizes error handling,
-`auth.js` and `events.js` are the endpoint-specific calls.
+wrappers — `client.js` attaches the token, normalizes error handling, and
+exposes `resolveMediaUrl()` (uploaded-image paths come back from the API
+relative to the *backend's* origin, not the frontend's — every `<img>`
+rendering an `avatarUrl`/`imageUrl` needs to resolve through it, or the
+image 404s in production). `auth.js`, `events.js`, and `connections.js` are
+the endpoint-specific calls.
 
 ## How to run `schema.sql`
 

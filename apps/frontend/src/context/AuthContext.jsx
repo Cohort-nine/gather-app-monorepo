@@ -56,8 +56,15 @@ export function AuthProvider({ children }) {
     authApi.logout().catch(() => {});
   }
 
+  // For flows that update the current user server-side (avatar upload, later
+  // a profile-edit form) and get the fresh object back — patches the cached
+  // user in place instead of making every caller re-fetch /auth/me.
+  function updateUser(patch) {
+    setUser((current) => (current ? { ...current, ...patch } : current));
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, signup, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, signup, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

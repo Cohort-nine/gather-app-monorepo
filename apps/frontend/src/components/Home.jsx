@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import GatherIntro from './GatherIntro';
 import GatherLogo from './GatherLogo';
+import FriendsEventsSection from './FriendsEventsSection.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Home.css';
 
@@ -98,6 +99,11 @@ export default function Home() {
           </Link>
         </div>
       </header>
+
+      {/* Meetup-style social proof: only worth showing once someone has
+          connections and RSVPs to draw from, so it's signed-in-only rather
+          than a permanent section with nothing in it for a new visitor. */}
+      {user ? <FriendsEventsSection /> : null}
 
       <GatherIntro
         videoRef={videoRef}

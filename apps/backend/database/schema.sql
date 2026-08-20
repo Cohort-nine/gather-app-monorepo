@@ -4,6 +4,7 @@
 -- GENERATED FILE. Do not hand-edit — run `npm run sql:build` instead.
 --   Source:  prisma/migrations/20260805000140_init/migration.sql
 --            prisma/migrations/20260806003934_add_auth/migration.sql
+--            prisma/migrations/20260820010257_add_event_image/migration.sql
 --
 -- This file exists so the database can be created with plain SQL instead of
 -- Prisma. It is generated from the migrations rather than maintained by hand,
@@ -168,6 +169,7 @@ CREATE TABLE "events" (
     "completed_at" TIMESTAMPTZ(6),
     "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMPTZ(6) NOT NULL,
+    "image_url" TEXT,
 
     CONSTRAINT "events_pkey" PRIMARY KEY ("id")
 );

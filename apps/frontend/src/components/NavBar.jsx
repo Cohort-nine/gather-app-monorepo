@@ -1,6 +1,7 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import GatherLogo from "./GatherLogo.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
+import { resolveMediaUrl } from "../api/client.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { reliabilityLabel } from "../lib/reliability.js";
 import "./NavBar.css";
@@ -67,9 +68,16 @@ export default function NavBar() {
           <div className="nav__account">
             {user ? (
               <>
-                <span className="nav__handle" title={user.displayName}>
+                <Link className="nav__handle" to="/profile" title={`${user.displayName} — edit profile`}>
+                  {user.avatarUrl ? (
+                    <img className="nav__handle-avatar" src={resolveMediaUrl(user.avatarUrl)} alt="" />
+                  ) : (
+                    <span className="nav__handle-avatar nav__handle-avatar--placeholder">
+                      {user.displayName?.[0]?.toUpperCase() ?? "?"}
+                    </span>
+                  )}
                   @{user.handle}
-                </span>
+                </Link>
                 {user.reliability ? (
                   <span
                     className={`reliability-badge reliability-badge--${user.reliability.band}`}

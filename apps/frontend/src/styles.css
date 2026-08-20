@@ -16,10 +16,15 @@
   --panel-border: rgba(255,255,255,0.06);
   --surface-bg: rgba(255,255,255,0.02);
   --surface-border: rgba(255,255,255,0.06);
-  --accent: #A78BFA;            /* violet — echoes the intro's dark/premium feel instead of a generic UI blue */
-  --accent-strong: #C4B5FD;    /* hover/emphasis — lighter reads as "brighter" on dark */
-  --muted: #94a3b8;
+  /* Pure black-and-white brand — no hue anywhere. Depth and emphasis come
+     from --glow (a light bleed, since a dark box-shadow is invisible on a
+     near-black page) instead of a color accent. */
+  --accent: #F5F5F5;            /* near-white, used for CTAs/links/emphasis */
+  --accent-strong: #FFFFFF;    /* hover/emphasis — brighter reads as "stronger" on dark */
+  --accent-ink: #0b0d0f;       /* text/icon color to sit on top of an accent-filled surface */
+  --muted: #9ca3af;            /* neutral gray — the old #94a3b8 (slate) carried a faint blue tint */
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
+  --glow: 0 0 0 1px rgba(255,255,255,0.14), 0 0 20px rgba(255,255,255,0.22), 0 0 48px rgba(255,255,255,0.1);
 }
 
 /* Light theme overrides when .theme-light is present on <html> */
@@ -31,10 +36,14 @@
   --panel-border: #d1d5db;
   --surface-bg: #ffffff;
   --surface-border: #cbd5e1;
-  --accent: #7C3AED;
-  --accent-strong: #6D28D9;    /* hover/emphasis — darker reads as "stronger" on light */
+  --accent: #0b0d0f;           /* near-black, the light theme's mirror of dark theme's bg */
+  --accent-strong: #000000;    /* hover/emphasis — darker reads as "stronger" on light */
+  --accent-ink: #ffffff;       /* text/icon color to sit on top of an accent-filled surface */
   --muted: #6b7280;
   --shadow: 0 10px 30px rgba(15,23,42,0.06);
+  /* No white to bleed on a light page — depth here is a conventional soft
+     shadow ring instead of a glow. */
+  --glow: 0 0 0 1px rgba(15,23,42,0.08), 0 8px 24px rgba(15,23,42,0.12);
 }
 
 * {
@@ -47,6 +56,19 @@ body {
   color: var(--color-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* No global anchor style existed before — every plain <Link>/<a> with no
+   className fell back to the browser's default blue. That used to blend in
+   next to the old blue accent; against black-and-white it reads as a bug.
+   Anything more specific (buttons, nav links, etc.) already overrides this
+   via its own class, so this only reaches the plain, unstyled links. */
+a {
+  color: var(--accent);
+}
+
+a:hover {
+  color: var(--accent-strong);
 }
 
 button,
@@ -84,11 +106,18 @@ textarea {
 }
 
 .eyebrow {
-  color: var(--accent);
+  color: var(--accent-strong);
+  /* With no hue to set it apart from body text, a soft glow is what makes
+     this read as "emphasis" instead of just slightly-brighter ink. */
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
   font-size: 0.875rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+}
+
+.theme-light .eyebrow {
+  text-shadow: none;
 }
 
 .form {
@@ -102,6 +131,15 @@ textarea {
   font-weight: 600;
 }
 
+/* Field-level rules/hints (password requirements, handle format, etc.) —
+   without this a <small> inherits the label's bold ink color at a slightly
+   smaller size, which reads as loud as the label itself instead of a quiet
+   aside. */
+.form label small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
 .form input,
 .form select,
 .form textarea {
@@ -111,16 +149,30 @@ textarea {
   padding: 10px 12px;
   background: var(--surface-bg);
   color: var(--color-ink);
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.form input:focus-visible,
+.form select:focus-visible,
+.form textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--glow);
 }
 
 .form button {
   border: 0;
   border-radius: 10px;
   padding: 12px 16px;
-  color: #ffffff;
+  color: var(--accent-ink);
   background: var(--accent);
   font-weight: 700;
   cursor: pointer;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.form button:hover:not(:disabled) {
+  box-shadow: var(--glow);
 }
 
 .status {
@@ -145,6 +197,7 @@ textarea {
 .theme-toggle:hover {
   border-color: var(--accent);
   color: var(--accent);
+  box-shadow: var(--glow);
 }
 
 /* Reliability band pill. Shared so "your score" in the nav and any future
