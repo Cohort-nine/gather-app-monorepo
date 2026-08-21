@@ -53,37 +53,132 @@
 
 .home__nav-side {
   display: flex;
-  gap: 22px;
+  gap: 10px;
   align-items: center;
   font-size: 14px;
+  min-width: 0;
 }
 
 .home__nav-side--end {
   justify-content: flex-end;
 }
 
-.home__nav a {
-  color: rgba(255, 255, 255, 0.82);
+/* ---------------------------------------------------------------------------
+   Hero nav buttons.
+
+   These can't use the theme tokens the rest of the app uses. Those assume a
+   known page background; this bar floats over a video whose brightness changes
+   every frame — pale sky in one shot, dark rooftop in the next. So each pill
+   carries its own dark scrim and a white hairline, which holds contrast over
+   anything underneath rather than hoping the frame is dark enough.
+
+   Same reasoning as .event-card__category over a cover photo.
+   --------------------------------------------------------------------------- */
+.home__nav-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(11, 13, 15, 0.42);
+  backdrop-filter: blur(8px);
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
   text-decoration: none;
-  transition: color 0.2s;
-}
-
-.home__nav a:hover {
-  color: #fff;
-}
-
-.home__nav-link-button {
-  background: none;
-  border: 0;
-  padding: 0;
-  font: inherit;
-  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
   cursor: pointer;
-  transition: color 0.2s;
+  transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
 }
 
-.home__nav-link-button:hover {
-  color: #fff;
+.home__nav-btn:hover {
+  background: rgba(11, 13, 15, 0.62);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+/* One filled button in the bar, on the action worth taking. White fill rather
+   than the navy accent: navy on a sunset video reads as a hole, whereas white
+   holds against any frame — and the hero's own CTA is already white, so the
+   page has one visual promise instead of two. */
+.home__nav-btn--primary {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0b0d0f;
+}
+
+.home__nav-btn--primary:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: #0b0d0f;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Account chip. Quieter than the nav buttons — no fill, just a hairline — so
+   it reads as "who you are" rather than a third thing competing to be pressed,
+   while still being an obvious target for reaching your profile. */
+.home__nav-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(11, 13, 15, 0.32);
+  backdrop-filter: blur(8px);
+  text-decoration: none;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.home__nav-account:hover {
+  background: rgba(11, 13, 15, 0.55);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+.home__nav-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.home__nav-avatar--placeholder {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.home__nav-handle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  /* The avatar alone still identifies the account, so the handle goes and the
+     chip collapses to a circle rather than the whole control disappearing. */
+  .home__nav-handle {
+    display: none;
+  }
+
+  .home__nav-account {
+    padding: 4px;
+  }
+
+  .home__nav-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
 }
 
 /* Destination for the flying logo. Keeps its space from first paint so

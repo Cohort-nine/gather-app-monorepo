@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import GatherIntro from './GatherIntro';
 import GatherLogo from './GatherLogo';
+import { resolveMediaUrl } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import './Home.css';
 
@@ -26,9 +27,17 @@ export default function Home() {
   return (
     <div className="home">
       <nav className="home__nav">
+        {/* Pills rather than bare text. These sit on a video whose brightness
+            changes frame to frame, so a plain link has no reliable contrast —
+            each one carries its own scrim and border and stays legible over
+            sky, crowd, or rooftop alike. */}
         <div className="home__nav-side">
-          <Link to="/events">Browse</Link>
-          <Link to="/events/new">Host</Link>
+          <Link className="home__nav-btn" to="/events">
+            Browse
+          </Link>
+          <Link className="home__nav-btn home__nav-btn--primary" to="/events/new">
+            Host a gathering
+          </Link>
         </div>
 
         {/* The logo flies into this slot. It reserves its space from the first
@@ -43,11 +52,45 @@ export default function Home() {
 
         <div className="home__nav-side home__nav-side--end">
           {user ? (
-            <button type="button" className="home__nav-link-button" onClick={logout}>
-              Sign out ({user.handle})
-            </button>
+            <>
+              {/* An avatar chip linking to the profile, the same pattern the
+                  inner NavBar uses — so the account control looks like itself
+                  on every page. As bare text it had nothing anchoring it and
+                  read as a stray label floating beside a button. */}
+              <Link
+                className="home__nav-account"
+                to="/profile"
+                title={`${user.displayName} — edit profile`}
+              >
+                {user.avatarUrl ? (
+                  <img
+                    className="home__nav-avatar"
+                    src={resolveMediaUrl(user.avatarUrl)}
+                    alt=""
+                  />
+                ) : (
+                  <span
+                    className="home__nav-avatar home__nav-avatar--placeholder"
+                    aria-hidden="true"
+                  >
+                    {user.displayName?.[0]?.toUpperCase() ?? '?'}
+                  </span>
+                )}
+                <span className="home__nav-handle">@{user.handle}</span>
+              </Link>
+              <button type="button" className="home__nav-btn" onClick={logout}>
+                Sign out
+              </button>
+            </>
           ) : (
-            <Link to="/login">Sign in</Link>
+            <>
+              <Link className="home__nav-btn" to="/login">
+                Sign in
+              </Link>
+              <Link className="home__nav-btn home__nav-btn--primary" to="/signup">
+                Sign up
+              </Link>
+            </>
           )}
         </div>
       </nav>
