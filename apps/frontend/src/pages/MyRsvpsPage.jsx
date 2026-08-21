@@ -103,7 +103,7 @@ export default function MyRsvpsPage() {
     const active = ["going", "waitlisted"].includes(rsvp.status);
 
     return (
-      <li key={rsvp.id} className="event-card my-rsvps__card">
+      <li key={rsvp.id} className="event-card">
         <div className="event-card__header">
           <h3>
             <Link to={`/events/${event.id}`}>{event.title}</Link>
@@ -134,7 +134,7 @@ export default function MyRsvpsPage() {
           <p className="status status--error">The host cancelled this event.</p>
         ) : null}
 
-        <div className="my-rsvps__actions">
+        <div className="event-card__footer">
           <Link to={`/events/${event.id}`}>View details</Link>
 
           {canCancel && active && event.status !== "cancelled" ? (
@@ -154,12 +154,16 @@ export default function MyRsvpsPage() {
 
   return (
     <main className="page">
-      <section className="panel">
+      <section className="panel page-header">
         <p className="eyebrow">Gather</p>
         <div className="my-rsvps__heading">
           <h1>Your RSVPs</h1>
           <Link to="/events">Find something else</Link>
         </div>
+        <p className="page-header__sub">
+          What you've said yes to. Cancelled RSVPs stay here on purpose — that
+          history is what your reliability score is built from.
+        </p>
 
         {message ? <p className="status">{message}</p> : null}
         {error ? <p className="status status--error">{error}</p> : null}

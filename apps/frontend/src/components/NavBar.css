@@ -20,10 +20,13 @@
    measured 805px inside a 491px track and overflowed *leftward* — printing the
    account row straight over the centred logo. flex-wrap never got a chance to
    help, because the element was never constrained in the first place. */
+/* Matches .page's 24px gutter so the wordmark lines up with the page title
+   directly beneath it. At 16px it sat 8px inboard of everything else, which
+   is the kind of misalignment you feel without being able to name. */
 .nav__inner {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 12px 24px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

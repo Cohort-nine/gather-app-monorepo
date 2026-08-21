@@ -50,7 +50,7 @@ export default function EventsPage() {
 
   return (
     <main className="page">
-      <section className="panel">
+      <section className="panel page-header">
         <p className="eyebrow">Gather</p>
         {/* "Your events" and "Host a gathering" used to sit here too. They were
             added before the persistent nav existed; now they are the same two
@@ -59,6 +59,10 @@ export default function EventsPage() {
         <div className="events-heading">
           <h1>Browse gatherings</h1>
         </div>
+        <p className="page-header__sub">
+          Small, local, and hosted by people you can look up. Filter by what you're
+          in the mood for, or just see what's soonest.
+        </p>
 
         <form className="events-filters" onSubmit={(e) => e.preventDefault()}>
           <input

@@ -1,6 +1,7 @@
 import { Route, Routes, useLocation } from "react-router-dom";
 import Home from "./components/Home";
 import NavBar from "./components/NavBar";
+import SiteFooter from "./components/SiteFooter";
 import ConnectionsPage from "./pages/ConnectionsPage";
 import EventDetailPage from "./pages/EventDetailPage";
 import EventFormPage from "./pages/EventFormPage";
@@ -43,6 +44,10 @@ export default function App() {
             looks like the app crashed. */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+
+      {/* Same exclusion as the nav: the homepage closes with its own hero and
+          shouldn't hand off to a second, quieter brand block. */}
+      {showNav ? <SiteFooter /> : null}
     </>
   );
 }

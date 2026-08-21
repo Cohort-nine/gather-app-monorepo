@@ -1,7 +1,21 @@
+/* A toolbar, not a form. Now that the header has no card around it, the
+   controls need their own container to read as a group — otherwise three
+   inputs sit loose on the page background with nothing tying them together. */
 .events-filters {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
-  gap: 12px;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px;
+  background: var(--surface-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+}
+
+@media (max-width: 640px) {
+  .events-filters {
+    grid-template-columns: 1fr;
+  }
 }
 
 .events-filters input,

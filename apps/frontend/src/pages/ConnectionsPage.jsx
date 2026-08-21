@@ -101,7 +101,7 @@ export default function ConnectionsPage() {
 
   return (
     <main className="page">
-      <section className="panel">
+      <section className="panel page-header">
         <p className="eyebrow">Gather</p>
         <h1>Connections</h1>
         <p className="event-form__intro">

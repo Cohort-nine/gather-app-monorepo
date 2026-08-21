@@ -124,7 +124,7 @@ export default function MyEventsPage() {
     <main className="page">
       {showConfetti ? <ConfettiBurst onDone={() => setShowConfetti(false)} /> : null}
 
-      <section className="panel">
+      <section className="panel page-header">
         <p className="eyebrow">Gather</p>
         <div className="my-events__heading">
           <h1>Your events</h1>
@@ -132,6 +132,10 @@ export default function MyEventsPage() {
             Host a gathering
           </Link>
         </div>
+        <p className="page-header__sub">
+          Everything you're hosting, including drafts — which don't appear on browse
+          until you publish them.
+        </p>
 
         {celebration ? (
           <section className="my-events__celebrate" role="status">
@@ -197,13 +201,20 @@ export default function MyEventsPage() {
                 {event.visibility !== "public" ? ` · ${event.visibility.replace("_", " ")}` : ""}
               </p>
 
-              <p className="event-card__meta">
-                {event.goingCount} going
-                {event.waitlistCount > 0 ? ` · ${event.waitlistCount} waitlisted` : ""}
-                {event.capacity ? ` · capacity ${event.capacity}` : ""}
+              {/* Headcount is the reason a host opens this page, so it gets the
+                  numeral treatment from the event detail page rather than a
+                  third line of grey meta. */}
+              <p className="my-events__stats">
+                <span className="my-events__stat-count">{event.goingCount}</span>
+                <span className="my-events__stat-label">
+                  going
+                  {event.capacity ? ` of ${event.capacity}` : ""}
+                  {event.waitlistCount > 0 ? ` · ${event.waitlistCount} waitlisted` : ""}
+                </span>
               </p>
 
-              <div className="my-events__actions">
+              <div className="event-card__footer">
+                <Link to={`/events/${event.id}`}>View details</Link>
                 <Link to={`/events/${event.id}/edit`}>Edit</Link>
               </div>
             </li>

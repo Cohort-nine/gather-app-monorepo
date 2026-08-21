@@ -89,10 +89,27 @@
   background: color-mix(in srgb, var(--muted) 10%, transparent);
 }
 
-.my-events__actions {
+/* Headcount as a figure, matching the SPOTS stat on the event detail page. */
+.my-events__stats {
   display: flex;
-  gap: 1rem;
-  margin-top: 0.75rem;
+  align-items: baseline;
+  gap: 0.45rem;
+  margin: 0.9rem 0 0;
+}
+
+.my-events__stat-count {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+
+.my-events__stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
 }
 
 .my-events__empty {

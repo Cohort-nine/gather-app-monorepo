@@ -13,27 +13,20 @@
   margin: 0;
 }
 
+/* Same small-caps label treatment as the event detail page's WHEN / WHERE,
+   with real space around it so Upcoming and Past read as two sections rather
+   than one long run of rows. */
 .my-rsvps__section-title {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  margin: 1.75rem 0 0.75rem;
+  margin: 2.5rem 0 1rem;
 }
 
-.my-rsvps__card h3 {
-  margin: 0;
-}
-
-.my-rsvps__card h3 a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.my-rsvps__card h3 a:hover {
-  color: var(--accent);
-  text-decoration: underline;
+.my-rsvps__section-title:first-of-type {
+  margin-top: 0;
 }
 
 /* Past RSVPs are history, not things to act on — dimmed so the upcoming list
@@ -74,28 +67,23 @@
   background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
-.my-rsvps__actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 0.75rem;
-}
-
+/* Destructive, so it stays a quiet text button and only turns red on hover —
+   it shouldn't compete with "View details" for attention when you're just
+   scanning what you signed up for. */
 .my-rsvps__cancel {
   background: none;
   border: none;
   padding: 0;
   font: inherit;
   font-weight: 600;
-  color: #dc2626;
+  color: var(--muted);
   text-decoration: underline;
   cursor: pointer;
   width: auto;
 }
 
 .my-rsvps__cancel:hover:not(:disabled) {
-  color: #b91c1c;
+  color: #dc2626;
 }
 
 .my-rsvps__cancel:disabled {

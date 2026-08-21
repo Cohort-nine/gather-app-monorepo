@@ -23,21 +23,23 @@
   --panel-border: rgba(255,255,255,0.06);
   --surface-bg: rgba(255,255,255,0.02);
   --surface-border: rgba(255,255,255,0.06);
-  /* One accent, teal, used sparingly — CTAs, links, active nav, focus rings,
+  /* One accent, navy, used sparingly — CTAs, links, active nav, focus rings,
      the eyebrow. Everything else stays neutral, so the colour still means
      "this is interactive" rather than becoming wallpaper.
 
-     Deliberately cyan-leaning (hue 174) rather than a green-leaning teal.
-     #16a34a "going" sits at hue 142, so this keeps ~32 degrees of separation
-     and can't be misread as a status. Status pills also carry a text label
-     and a border, never colour alone, so the distinction survives for anyone
-     who can't separate the two hues at all.
+     A true navy (#1E3A8A) is unusable here: 1.88:1 against this page, which
+     is effectively invisible. Navy is a *light-background* colour. So the
+     dark theme carries navy's hue at a light tint — same family, readable at
+     8.93:1 — and the light theme uses the real thing. The brand still reads
+     as navy in both, because hue is what people register, not luminance.
 
-     10.46:1 on the page background — well past AA, and comfortable rather
-     than shouting. */
-  --accent: #2DD4BF;
-  --accent-strong: #5EEAD4;    /* hover/emphasis — brighter reads as "stronger" on dark */
-  --accent-ink: #062F2B;       /* deep teal-black for text sitting ON an accent fill (7.78:1) */
+     Hue 219, well clear of green 142, amber 38, and red 0, so it can't be
+     mistaken for a status. Status pills also carry a text label and a border,
+     never colour alone, so that holds even if the hues are indistinguishable
+     to the viewer. */
+  --accent: #8FB0F0;
+  --accent-strong: #B6CDF7;    /* hover/emphasis — brighter reads as "stronger" on dark */
+  --accent-ink: #0A1733;       /* deep navy-black for text sitting ON an accent fill (8.93:1) */
   --muted: #9ca3af;            /* neutral gray — the old #94a3b8 (slate) carried a faint blue tint */
   /* Form controls need 3:1 against their own background (WCAG 1.4.11), which
      a decorative hairline doesn't. Keeping them separate means inputs are
@@ -49,7 +51,7 @@
      2% white over nothing. */
   --menu-bg: #16191c;
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
-  --glow: 0 0 0 1px rgba(45,212,191,0.35), 0 0 20px rgba(45,212,191,0.28), 0 0 48px rgba(45,212,191,0.12);
+  --glow: 0 0 0 1px rgba(143,176,240,0.38), 0 0 20px rgba(143,176,240,0.30), 0 0 48px rgba(143,176,240,0.13);
 }
 
 /* Light theme overrides when .theme-light is present on <html> */
@@ -74,8 +76,8 @@
   --panel-border: #D8D2C7;
   --surface-bg: #FCFBF8;
   --surface-border: #CCC5B8;
-  --accent: #0F766E;           /* deep teal — 5.07:1 on panel, white on it is 5.47:1 */
-  --accent-strong: #115E59;    /* hover/emphasis — darker reads as "stronger" on light */
+  --accent: #1E3A8A;           /* true navy — 9.60:1 on panel, white on it is 10.36:1 */
+  --accent-strong: #1B3577;    /* hover/emphasis — darker reads as "stronger" on light */
   --accent-ink: #FFFFFF;       /* text/icon color to sit on top of an accent-filled surface */
   --muted: #655F55;            /* warm gray, 5.86:1 on panel (the old #6b7280 was cooler and weaker) */
   --field-border: #8F8676;     /* 3.33:1 on panel — inputs stay findable */
@@ -83,7 +85,7 @@
   --shadow: 0 10px 30px rgba(35,33,30,0.07);
   /* No white to bleed on a light page — depth here is a soft teal-tinted ring
      instead of a glow, so focus still reads as the accent. */
-  --glow: 0 0 0 1px rgba(15,118,110,0.45), 0 8px 24px rgba(35,33,30,0.12);
+  --glow: 0 0 0 1px rgba(30,58,138,0.45), 0 8px 24px rgba(35,33,30,0.12);
 }
 
 * {
@@ -126,10 +128,67 @@ textarea {
   font: inherit;
 }
 
+/* One focus ring for the whole app. Only three form rules had focus styling
+   before, so tabbing through the nav, links, cards, and buttons showed either
+   the browser default or nothing at all — the fastest way to make an app feel
+   unfinished to anyone not using a mouse.
+
+   :focus-visible rather than :focus, so it appears for keyboard users and
+   doesn't flash on every mouse click. */
+:where(a, button, [role="button"], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .page {
   max-width: 1080px;
   margin: 0 auto;
-  padding: 32px 16px 48px;
+  padding: 40px 24px 72px;
+}
+
+/* ---------------------------------------------------------------------------
+   Page header.
+
+   Every page used to open with its title inside a .panel — a floating card
+   wrapped around an <h1>. That's the single clearest "student project" tell in
+   the whole app: shipped products don't put their page title in a box, they
+   set it on the page and separate it with space and a rule.
+
+   Same markup, one extra class. The card chrome comes off, the type gets room,
+   and a hairline carries the separation the border used to.
+   --------------------------------------------------------------------------- */
+.page-header {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 24px;
+  margin: 0 0 32px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.page-header h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.1;
+  margin: 6px 0 0;
+}
+
+/* The eyebrow above every h1 said "GATHER" on every page — the brand is
+   already in the nav, twice. Repeating it is noise, so it's hidden here and
+   the space goes to the title instead. */
+.page-header .eyebrow {
+  display: none;
+}
+
+/* Optional one-line description under a page title. Products explain what a
+   screen is for; this app never did. */
+.page-header__sub {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 0.975rem;
+  line-height: 1.6;
 }
 
 .grid {
@@ -165,6 +224,66 @@ textarea {
   padding: 20px 22px;
 }
 
+/* ---------------------------------------------------------------------------
+   Row anatomy for the two list pages, borrowing the event detail page's
+   language so the app reads as one product: strong title, status aligned
+   right, quiet meta, a figure, then actions below a hairline.
+
+   All of it scoped under .event-list, so the browse grid — which has a cover
+   photo doing the visual work instead — is untouched.
+   --------------------------------------------------------------------------- */
+
+/* Title and status share a baseline. .event-card__header had no rule at all,
+   so the pill was dropping onto its own line. */
+.event-list .event-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.event-list .event-card__header h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.event-list .event-card__header h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.event-list .event-card__header h3 a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+.event-list .event-card__meta {
+  margin: 0.6rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Actions sit below a rule, so a row reads title → details → actions instead
+   of one undifferentiated column where "Cancel RSVP" weighs the same as the
+   venue name. */
+.event-list .event-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--panel-border);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
 .panel {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
@@ -186,7 +305,7 @@ textarea {
      hue to separate it from body text — brightness was the only signal left.
      Now that the accent carries hue, the halo is doing much less work, so it
      drops to a faint teal breath rather than a white one. */
-  text-shadow: 0 0 16px rgba(94, 234, 212, 0.25);
+  text-shadow: 0 0 16px rgba(182, 205, 247, 0.28);
   font-size: 0.875rem;
   font-weight: 700;
   text-transform: uppercase;
