@@ -90,33 +90,85 @@
   font-weight: 600;
 }
 
-/* Facts as a definition list: it's genuinely term/description data, which
-   means a screen reader announces "When: Friday..." rather than two loose
-   fragments. */
+/* Still a definition list underneath: it's genuinely term/description data,
+   so a screen reader announces "When: Saturday…" rather than two loose
+   fragments.
+
+   The four key facts as a bordered slab with hairline dividers, rather than
+   four columns floating in space. Two reasons it reads better: the inset
+   surface groups them as one unit you scan across, and the rules give the
+   ragged-length values (a two-line date next to a four-line address) a shared
+   edge so the row stops looking accidental. */
 .event-detail__facts {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1.25rem 2rem;
-  margin: 1.75rem 0 0;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0;
+  margin: 2rem 0 0;
+  border: 1px solid var(--surface-border);
+  border-radius: 14px;
+  background: var(--surface-bg);
+  overflow: hidden;
 }
 
-.event-detail__facts div {
+.event-detail__facts > div {
   min-width: 0;
+  padding: 1.15rem 1.35rem 1.25rem;
+  border-left: 1px solid var(--surface-border);
+}
+
+/* No rule on the leftmost cell in each row. :first-child covers row one; the
+   nth-child rules below re-clear it at each wrap point, since a wrapped grid
+   has no selector for "first in row". */
+.event-detail__facts > div:first-child {
+  border-left: 0;
 }
 
 .event-detail__facts dt {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.55rem;
 }
 
 .event-detail__facts dd {
   margin: 0;
-  line-height: 1.5;
+  line-height: 1.55;
   color: var(--color-ink);
+  font-size: 0.95rem;
+}
+
+/* Capacity, given the numeral treatment — the figure large and alone, the
+   qualifiers demoted underneath. tabular-nums so the digits don't shift
+   width as the count changes. */
+.event-detail__stat {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-ink);
+}
+
+.event-detail__stat-caption {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.text-urgent .event-detail__stat,
+.text-urgent .event-detail__stat-caption {
+  color: inherit;
+}
+
+.event-detail__host-name {
+  display: block;
+  font-weight: 700;
+  font-size: 1.02rem;
 }
 
 .event-detail__hidden-address span {
@@ -129,8 +181,9 @@
 }
 
 .event-detail__handle {
+  display: block;
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
 }
 
 .event-detail__rating {
@@ -143,11 +196,27 @@
   font-style: italic;
 }
 
+/* Labelled sections below the facts slab. The label repeats the dt treatment
+   so the whole page reads on one typographic system. */
+.event-detail__section {
+  margin-top: 2rem;
+}
+
+.event-detail__section-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.7rem;
+}
+
 .event-detail__description {
-  margin: 1.75rem 0 0;
-  line-height: 1.65;
+  margin: 0;
+  line-height: 1.7;
   white-space: pre-wrap;
-  max-width: 70ch;
+  max-width: 68ch;
+  font-size: 1rem;
   color: var(--color-ink);
 }
 
@@ -157,15 +226,21 @@
   gap: 0.5rem;
   list-style: none;
   padding: 0;
-  margin: 1.25rem 0 0;
+  margin: 0;
 }
 
+/* Outlined rather than filled. With a near-white accent on a near-black page,
+   a 15%-tint fill turned these into pale grey lozenges that competed with the
+   body text for attention; an outline reads as a quiet label instead. */
 .event-detail__tags li {
-  font-size: 0.85rem;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--color-ink);
+  background: transparent;
+  border: 1px solid var(--surface-border);
   border-radius: 999px;
-  padding: 0.2rem 0.7rem;
+  padding: 0.3rem 0.8rem;
 }
 
 .event-detail__actions {
@@ -204,6 +279,42 @@
 .event-detail__yourstatus {
   font-weight: 700;
   color: #16a34a;
+}
+
+/* Your RSVP still exists, but the gathering doesn't — so it reads as a
+   statement of record rather than a confirmation. Muted, not green. */
+.event-detail__yourstatus--void {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* One-line explanation of the reliability bands, sitting between the heading
+   and the list. */
+.event-detail__legend {
+  margin: 0.35rem 0 0;
+  max-width: 62ch;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.event-detail__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.event-detail__avatar--placeholder {
+  display: grid;
+  place-items: center;
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
 }
 
 .event-detail__cancel {
@@ -300,6 +411,26 @@
 .event-detail__band--unrated {
   color: var(--muted);
   background: color-mix(in srgb, var(--muted) 15%, transparent);
+}
+
+/* Below this the four columns can't hold a sensible measure, so the slab
+   becomes a single stack and the dividers rotate from vertical to horizontal.
+   Done as an explicit one-column layout rather than letting auto-fit wrap,
+   because a wrapped grid gives no way to select "first cell in a row" — the
+   vertical rules would land in the middle of the slab. */
+@media (max-width: 760px) {
+  .event-detail__facts {
+    grid-template-columns: 1fr;
+  }
+
+  .event-detail__facts > div {
+    border-left: 0;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .event-detail__facts > div:first-child {
+    border-top: 0;
+  }
 }
 
 @media (max-width: 600px) {

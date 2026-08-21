@@ -32,6 +32,22 @@ const timeFormatter = new Intl.DateTimeFormat(undefined, {
   minute: "2-digit"
 });
 
+/* An end time on a different calendar day needs the day, or the range reads
+   backwards: a hike running 8:27 PM to 2:27 AM looked like it finished six
+   hours before it started. Same-day events keep the bare time — repeating the
+   date there is noise. */
+const endDayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  hour: "numeric",
+  minute: "2-digit"
+});
+
+function formatEnd(startsAt, endsAt) {
+  const end = new Date(endsAt);
+  const sameDay = end.toDateString() === new Date(startsAt).toDateString();
+  return sameDay ? timeFormatter.format(end) : endDayFormatter.format(end);
+}
+
 /** "Excellent" reads better than "excellent" next to a name. */
 const titleCase = (value) =>
   typeof value === "string" && value.length ? value[0].toUpperCase() + value.slice(1) : value;
@@ -190,7 +206,7 @@ export default function EventDetailPage() {
             <dt>When</dt>
             <dd>
               {dateFormatter.format(startsAt)}
-              {event.endsAt ? ` – ${timeFormatter.format(new Date(event.endsAt))}` : ""}
+              {event.endsAt ? ` – ${formatEnd(startsAt, event.endsAt)}` : ""}
               {isPast ? <span className="event-detail__past"> · already happened</span> : null}
             </dd>
           </div>
@@ -233,23 +249,42 @@ export default function EventDetailPage() {
             </dd>
           </div>
 
+          {/* Capacity is the one fact people scan for, so it gets the numeral
+              treatment — the number large and alone, the qualifiers demoted to
+              a caption beneath. Reading "3" at a glance and "of 12 · 9 going"
+              only if you care is faster than parsing one run-on sentence. */}
           <div>
             <dt>Spots</dt>
-            <dd className={!event.isFull && event.spotsLeft !== null && event.spotsLeft <= 3 ? "text-urgent" : ""}>
-              {event.capacity === null
-                ? `${event.goingCount} going · no limit`
-                : event.isFull
-                  ? `Full · ${event.goingCount} going${
-                      event.waitlistCount ? ` · ${event.waitlistCount} waitlisted` : ""
-                    }`
-                  : `${event.spotsLeft} of ${event.capacity} left · ${event.goingCount} going`}
+            <dd
+              className={
+                !event.isFull && event.spotsLeft !== null && event.spotsLeft <= 3
+                  ? "text-urgent"
+                  : ""
+              }
+            >
+              <span className="event-detail__stat">
+                {event.capacity === null
+                  ? event.goingCount
+                  : event.isFull
+                    ? "Full"
+                    : event.spotsLeft}
+              </span>
+              <span className="event-detail__stat-caption">
+                {event.capacity === null
+                  ? "going · no limit"
+                  : event.isFull
+                    ? `${event.goingCount} going${
+                        event.waitlistCount ? ` · ${event.waitlistCount} waitlisted` : ""
+                      }`
+                    : `of ${event.capacity} left · ${event.goingCount} going`}
+              </span>
             </dd>
           </div>
 
           <div>
             <dt>Host</dt>
             <dd>
-              {event.host?.displayName}{" "}
+              <span className="event-detail__host-name">{event.host?.displayName}</span>
               <span className="event-detail__handle">@{event.host?.handle}</span>
               {event.host?.hostReputation?.ratingCount > 0 ? (
                 <div className="event-detail__rating">
@@ -266,16 +301,26 @@ export default function EventDetailPage() {
           </div>
         </dl>
 
+        {/* Labelled sections. The description used to be a bare paragraph and
+            the tags a bare pill row, both floating under the facts with no
+            indication of what they were — "yes" sitting alone reads as a
+            rendering bug rather than a host's note. */}
         {event.description ? (
-          <p className="event-detail__description">{event.description}</p>
+          <section className="event-detail__section">
+            <h2 className="event-detail__section-label">About</h2>
+            <p className="event-detail__description">{event.description}</p>
+          </section>
         ) : null}
 
         {event.tags?.length ? (
-          <ul className="event-detail__tags">
-            {event.tags.map((tag) => (
-              <li key={tag}>{tag}</li>
-            ))}
-          </ul>
+          <section className="event-detail__section">
+            <h2 className="event-detail__section-label">Tags</h2>
+            <ul className="event-detail__tags">
+              {event.tags.map((tag) => (
+                <li key={tag}>{tag}</li>
+              ))}
+            </ul>
+          </section>
         ) : null}
 
         <div className="event-detail__actions">
@@ -289,16 +334,22 @@ export default function EventDetailPage() {
             </Link>
           ) : myRsvpStatus ? (
             <>
+              {/* On a cancelled event, "You're going" contradicts the banner
+                  directly above it. The RSVP is still on record — that's what
+                  the ledger is for — but the gathering isn't happening, so say
+                  that instead of implying it is. */}
               <span
                 className={`event-detail__yourstatus ${
-                  myRsvpStatus === "going" && justConfirmed ? "confirm-pulse" : ""
-                }`}
+                  event.status === "cancelled" ? "event-detail__yourstatus--void" : ""
+                } ${myRsvpStatus === "going" && justConfirmed ? "confirm-pulse" : ""}`}
               >
-                {myRsvpStatus === "going"
-                  ? "You're going"
-                  : `You're #${myWaitlist.position} on the waitlist`}
+                {event.status === "cancelled"
+                  ? "You were going — the host cancelled"
+                  : myRsvpStatus === "going"
+                    ? "You're going"
+                    : `You're #${myWaitlist.position} on the waitlist`}
               </span>
-              {!isPast ? (
+              {!isPast && event.status !== "cancelled" ? (
                 <button
                   type="button"
                   className="event-detail__cancel"
@@ -331,6 +382,17 @@ export default function EventDetailPage() {
       <section className="panel">
         <h2>Who's going</h2>
 
+        {/* The bands are the whole product and they arrive unexplained — a
+            visitor sees "EXCELLENT" next to a stranger's name with no idea
+            it's earned. One line, stated once, rather than a tooltip nobody
+            hovers. */}
+        {event.attendees?.length ? (
+          <p className="event-detail__legend">
+            Reliability is earned, not self-reported — each band is calculated from
+            how often that person actually showed up after saying they would.
+          </p>
+        ) : null}
+
         {event.attendees?.length === 0 && event.hiddenAttendeeCount === 0 ? (
           <p className="status">Nobody yet — you could be first.</p>
         ) : (
@@ -338,6 +400,23 @@ export default function EventDetailPage() {
             <ul className="event-detail__people">
               {event.attendees.map((person) => (
                 <li key={person.id}>
+                  {/* Same avatar treatment as the browse cards, initials as
+                      the fallback — a list of names reads as rows, a list of
+                      faces reads as people who are actually coming. */}
+                  {person.avatarUrl ? (
+                    <img
+                      className="event-detail__avatar"
+                      src={resolveMediaUrl(person.avatarUrl)}
+                      alt=""
+                    />
+                  ) : (
+                    <span
+                      className="event-detail__avatar event-detail__avatar--placeholder"
+                      aria-hidden="true"
+                    >
+                      {person.displayName?.[0]?.toUpperCase() ?? "?"}
+                    </span>
+                  )}
                   <span className="event-detail__person-name">{person.displayName}</span>
                   <span className="event-detail__handle">@{person.handle}</span>
                   {person.guestCount > 0 ? (

@@ -90,6 +90,33 @@ textarea {
   gap: 16px;
 }
 
+/* A stacked list of cards — My Events and My RSVPs, where each row is one of
+   your own records and reads better full width than tiled into columns.
+   Browse uses .event-grid (EventCard.css) instead, because there the cards
+   carry cover photos and tile properly.
+
+   This rule has to exist. Both pages already asked for .event-list, but the
+   definition lived in the old EventsPage.css and went away when browse was
+   rewritten as a card grid. A <ul> with no rule falls back to the browser
+   default — list-style: disc and padding-left: 40px — which is why the cards
+   sat indented from the panel above them. */
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 16px;
+}
+
+/* Browse cards get their inset from .event-card__body, which wraps a cover
+   photo edge-to-edge above the text. These rows have no photo and no body
+   wrapper, so their content was sitting flush against the border. Scoped to
+   the direct children of .event-list so browse cards keep their own padding
+   and don't end up double-inset. */
+.event-list > .event-card {
+  padding: 20px 22px;
+}
+
 .panel {
   background: var(--panel-bg);
   border: 1px solid var(--panel-border);
