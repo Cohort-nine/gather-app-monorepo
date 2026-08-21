@@ -1,0 +1,181 @@
+/* Rate the host. Sits below "Who's going" on a past event you attended. */
+
+.host-rating h2 {
+  margin: 0;
+}
+
+.host-rating__intro {
+  margin: 0.5rem 0 1.25rem;
+  max-width: 58ch;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.host-rating__form {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 46rem;
+}
+
+/* A fieldset because these five buttons are one control answering one
+   question — that's what a screen reader needs to hear, and the legend is
+   the question. */
+.host-rating__stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.host-rating__legend {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 0;
+  margin-bottom: 0.5rem;
+}
+
+/* Buttons, not a radio group styled to look like stars. They need hover and
+   focus states that light up every star to the left, which a radio can't do
+   without a pile of sibling selectors. */
+.host-rating__star {
+  background: none;
+  border: 0;
+  padding: 2px 3px;
+  font-size: 1.9rem;
+  line-height: 1;
+  color: var(--star-dim);
+  cursor: pointer;
+  transition: color 0.12s ease, transform 0.12s ease;
+}
+
+.host-rating__star:hover {
+  transform: translateY(-2px);
+}
+
+.host-rating__star.is-on {
+  color: var(--star);
+}
+
+.host-rating__value {
+  margin-left: 0.75rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.host-rating__comment {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.host-rating__comment small {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.host-rating__comment textarea {
+  width: 100%;
+  border: 1px solid var(--field-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: var(--surface-bg);
+  color: var(--color-ink);
+  font: inherit;
+  resize: vertical;
+}
+
+.host-rating__comment textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: var(--glow);
+}
+
+.host-rating__submit {
+  justify-self: start;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 20px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.host-rating__submit:hover:not(:disabled) {
+  background: var(--accent-strong);
+}
+
+.host-rating__submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.host-rating__ok {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+/* Ratings already left, under the form. */
+.host-rating__list {
+  list-style: none;
+  padding: 0;
+  margin: 1.75rem 0 0;
+  border-top: 1px solid var(--panel-border);
+}
+
+.host-rating__list li {
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.host-rating__list li:last-child {
+  border-bottom: 0;
+}
+
+.host-rating__list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.75rem;
+}
+
+.host-rating__list-stars {
+  color: var(--star);
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+}
+
+.host-rating__list-rater {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.host-rating__list-handle {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.host-rating__list-dim {
+  color: var(--star-dim);
+}
+
+.host-rating__list-comment {
+  margin: 0.45rem 0 0;
+  max-width: 62ch;
+  line-height: 1.6;
+  color: var(--color-ink);
+}
+
+@media (max-width: 600px) {
+  .host-rating__star {
+    font-size: 2.1rem;
+    padding: 4px 5px;
+  }
+}

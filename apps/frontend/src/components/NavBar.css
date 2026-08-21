@@ -127,30 +127,37 @@
   box-shadow: var(--glow);
 }
 
+/* Avatar-only now, so it's a circular target rather than a text link. The
+   ring on hover is what tells you it's interactive once the label is gone. */
 .nav__handle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: var(--muted);
+  justify-content: center;
+  border-radius: 50%;
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
-  max-width: 14ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px var(--surface-border);
+  transition: box-shadow 0.18s ease;
+}
+
+.nav__handle:hover {
+  box-shadow: 0 0 0 2px var(--accent);
 }
 
 .nav__handle:hover {
   color: var(--color-ink);
 }
 
+/* Bigger than the 20px it was, now that it's carrying the account on its own
+   and isn't just a bullet next to a name. Also clears the 24px minimum that
+   makes a target comfortable to hit. */
 .nav__handle-avatar {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  display: block;
 }
 
 .nav__handle-avatar--placeholder {

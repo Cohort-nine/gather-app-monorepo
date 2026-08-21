@@ -73,7 +73,20 @@ export default function NavBar() {
           <div className="nav__account">
             {user ? (
               <>
-                <Link className="nav__handle" to="/profile" title={`${user.displayName} — edit profile`}>
+                {/* Avatar only. The handle was ~90px of text repeating what
+                    the picture already says, in the most crowded part of the
+                    bar. An avatar is the conventional account affordance —
+                    people know it goes to their profile.
+
+                    aria-label carries what the removed text used to, so this
+                    is still announced as "@maya_ortiz, your profile" rather
+                    than an unlabelled link. */}
+                <Link
+                  className="nav__handle"
+                  to="/profile"
+                  title={`${user.displayName} — your profile`}
+                  aria-label={`@${user.handle} — your profile`}
+                >
                   {user.avatarUrl ? (
                     <img className="nav__handle-avatar" src={resolveMediaUrl(user.avatarUrl)} alt="" />
                   ) : (
@@ -81,7 +94,6 @@ export default function NavBar() {
                       {user.displayName?.[0]?.toUpperCase() ?? "?"}
                     </span>
                   )}
-                  @{user.handle}
                 </Link>
                 {user.reliability ? (
                   <span

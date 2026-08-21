@@ -187,9 +187,23 @@
 }
 
 .event-detail__rating {
-  margin-top: 0.2rem;
+  margin-top: 0.35rem;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+/* Same gold as the rating form's stars — one symbol, one meaning, one colour
+   everywhere it appears. */
+.event-detail__star {
+  color: var(--star);
+  font-size: 1rem;
+}
+
+/* The number is the fact; "from 3 ratings" is the qualifier. */
+.event-detail__score {
+  color: var(--color-ink);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .event-detail__rating--none {

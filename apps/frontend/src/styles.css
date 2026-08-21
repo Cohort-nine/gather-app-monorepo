@@ -50,6 +50,12 @@
      the OS dropdown: it paints its own window and needs a real colour, not
      2% white over nothing. */
   --menu-bg: #16191c;
+  /* Rating stars. Gold is the one place a hue outside the accent/status system
+     is justified — a star means "rating" by universal convention and reads as
+     that instantly. Themed because a bright gold that's 10.5:1 on near-black
+     drops to 1.72:1 on warm paper, which is invisible. */
+  --star: #f5b301;
+  --star-dim: rgba(255, 255, 255, 0.16);
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
   --glow: 0 0 0 1px rgba(143,176,240,0.38), 0 0 20px rgba(143,176,240,0.30), 0 0 48px rgba(143,176,240,0.13);
 }
@@ -82,6 +88,8 @@
   --muted: #655F55;            /* warm gray, 5.86:1 on panel (the old #6b7280 was cooler and weaker) */
   --field-border: #8F8676;     /* 3.33:1 on panel — inputs stay findable */
   --menu-bg: #FFFFFF;
+  --star: #A16207;             /* deeper gold — 4.56:1 on panel, still reads as gold */
+  --star-dim: #CFC8BA;
   --shadow: 0 10px 30px rgba(35,33,30,0.07);
   /* No white to bleed on a light page — depth here is a soft teal-tinted ring
      instead of a glow, so focus still reads as the accent. */

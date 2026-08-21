@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { resolveMediaUrl } from "../api/client.js";
 import { cancelRsvp, fetchEvent, rsvpToEvent } from "../api/events.js";
+import HostRatingForm from "../components/HostRatingForm.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import "./EventDetailPage.css";
 
@@ -164,6 +165,19 @@ export default function EventDetailPage() {
   const canRsvp =
     user && !isHost && !myRsvpStatus && !isPast && event.status === "published";
 
+  // Mirrors what POST /api/events/:id/ratings will accept: signed in, not the
+  // host, event has happened, not cancelled, and you RSVP'd. The server
+  // re-checks all of it and additionally rejects anyone the host marked a
+  // no-show — a fact this page doesn't have, so that one surfaces as the
+  // API's own error message rather than being guessed at here.
+  const canRate =
+    Boolean(user) &&
+    !isHost &&
+    isPast &&
+    event.status !== "cancelled" &&
+    event.status !== "draft" &&
+    Boolean(myRsvpStatus);
+
   return (
     <main className="page event-detail">
       <p className="event-detail__back">
@@ -288,8 +302,17 @@ export default function EventDetailPage() {
               <span className="event-detail__handle">@{event.host?.handle}</span>
               {event.host?.hostReputation?.ratingCount > 0 ? (
                 <div className="event-detail__rating">
-                  ★ {Number(event.host.hostReputation.score).toFixed(1)} from{" "}
-                  {event.host.hostReputation.ratingCount}{" "}
+                  {/* Gold, matching the stars in the rating form — the same
+                      symbol shouldn't be decorative in one place and grey in
+                      another. aria-hidden because the score is already read
+                      out as text right after it. */}
+                  <span className="event-detail__star" aria-hidden="true">
+                    ★
+                  </span>{" "}
+                  <strong className="event-detail__score">
+                    {Number(event.host.hostReputation.score).toFixed(1)}
+                  </strong>{" "}
+                  from {event.host.hostReputation.ratingCount}{" "}
                   {event.host.hostReputation.ratingCount === 1 ? "rating" : "ratings"}
                 </div>
               ) : (
@@ -459,6 +482,18 @@ export default function EventDetailPage() {
           </>
         ) : null}
       </section>
+
+      {/* Only after the event, and only for someone who was actually going —
+          asking people to rate a gathering they didn't attend is how ratings
+          stop meaning anything. Reloads the event on success so the host's
+          score at the top of the page reflects the rating just left. */}
+      {canRate ? (
+        <HostRatingForm
+          eventId={event.id}
+          hostName={event.host?.displayName}
+          onRated={load}
+        />
+      ) : null}
     </main>
   );
 }
