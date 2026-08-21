@@ -3,22 +3,123 @@
 ### 🔴 [**Live demo → gather-app-beige.vercel.app**](https://gather-app-beige.vercel.app/)
 
 A social events app: host a gathering, RSVP to one, and build a track record of
-actually showing up. Built on top of a student full-stack starter template using
-React, Vite, Node/Express, PostgreSQL, and Prisma ORM.
+actually showing up.
 
-## Template features
+## Problem statement
 
-The starter template this is built on provides:
+**Hosts of small gatherings cannot get a headcount they can trust, and have no
+way to tell who is likely to show up.**
 
-Stack:
+Free RSVP tools treat "yes" as costless. Nothing records whether you turned up
+last time, so a host planning for twelve cooks for twelve and seats seven. The
+host absorbs the cost — money, food, time, a half-empty room — and no signal
+anywhere in the system registers that anything went wrong. Happen twice and
+people stop hosting.
 
-- React + React Router + Vite (frontend)
-- Node.js + Express (backend API)
-- PostgreSQL + Prisma ORM (with hand-written SQL for constraints/views Prisma
-  can't express)
-- Docker Compose for local Postgres
-- Doppler for shared secrets
-- Git and GitHub
+Gather makes showing up legible. RSVP changes are appended to a ledger with
+timestamps, so cancelling two weeks out and cancelling an hour out are recorded
+as the different acts they are. Hosts mark who actually attended, separately
+from who said they would. A reliability score is derived from that history, and
+hosts can set a reliability floor for waitlist promotion. The same
+accountability runs the other way: hosts carry a reputation score and a rating,
+so attendees can see whether a host actually runs the events they announce.
+
+## Target user
+
+- **The recurring small host.** Runs something on a rhythm — monthly potluck,
+  weekly run club, craft night — for 6 to 40 people. Buys the food personally,
+  so an accurate headcount is a budget decision. Currently juggling a group chat
+  and a spreadsheet.
+- **The person new to an area.** Wants low-stakes ways to meet people without
+  walking into a room of strangers. Seeing that one person they know is already
+  going is often the difference between attending and not.
+- **The neighbourhood organiser.** Block parties, mutual-aid meetups, community
+  garden work days. Relies on the address-privacy control, which hides the exact
+  street address until someone has actually RSVP'd.
+
+## Features
+
+**Events** — create, browse, edit, and delete gatherings. Search by title or
+description, filter by category or city, sort by soonest / newest / popular /
+title. Drafts stay private to the host until published.
+
+**RSVPs** — one click to attend, automatic waitlisting when an event is full,
+automatic promotion when someone cancels. Bring a guest count. See everything
+you've signed up for in one place.
+
+**Attendance and reliability** — hosts record who actually turned up. Each
+user's reliability score and band is derived from that ledger, shown as a badge,
+and usable as a floor for waitlist promotion.
+
+**Host reputation and ratings** — attendees rate hosts 1–5 after a completed
+event; hosts carry a visible reputation score.
+
+**Connections** — search people by handle, send and accept requests, and see
+which of your connections are already going to an event before you commit. The
+homepage surfaces upcoming events your friends are attending.
+
+**Address privacy** — hosts can hide the exact street address until a visitor
+holds an active RSVP. Enforced server-side; the fields are stripped from the API
+response, not merely hidden in the UI.
+
+**Photo uploads** — one cover photo per event, plus profile avatars. Validated
+by magic bytes as well as MIME type, capped at 5MB.
+
+**Accounts** — signup, login, change password, change login email. Both changes
+re-verify the current password first.
+
+**Moderation** — report a user or an event.
+
+**Interface** — responsive card grid, dark and light themes, loading skeletons,
+empty states, error messages, and confirmation before anything destructive.
+
+## Technology
+
+- **Frontend** — React, Vite, React Router, plain CSS with design tokens
+- **Backend** — Node.js, Express, JWT auth with bcrypt
+- **Database** — PostgreSQL (Supabase in production), Prisma ORM over the `pg`
+  driver via `@prisma/adapter-pg`, with hand-written SQL for the CHECK
+  constraints, partial indexes, and view Prisma can't express
+- **Testing** — Vitest
+- **Infrastructure** — Vercel (frontend), Render (backend), Supabase (database),
+  GitHub Actions (CI + auto-deploy), Doppler (shared secrets), Docker Compose
+  (local Postgres)
+
+## Planning documents
+
+Written before the build, kept current with it:
+
+- [Project proposal](docs/01-project-proposal.md)
+- [Database diagram (ERD)](docs/02-database-diagram.md)
+- [API plan](docs/03-api-plan.md)
+- [Component plan](docs/04-component-plan.md)
+
+## Installation
+
+```bash
+git clone https://github.com/Cohort-nine/gather-app-monorepo.git
+cd gather-app-monorepo
+
+# backend
+cd apps/backend
+npm install
+cp .env.example .env        # fill in DATABASE_URL and JWT_SECRET
+npm run db:up               # optional: local Postgres in Docker
+npm run prisma:deploy       # apply migrations
+npm run db:seed             # load sample data
+npm run dev                 # http://localhost:3001
+
+# frontend, in a second terminal
+cd apps/frontend
+npm install
+cp .env.example .env        # VITE_API_BASE_URL=http://localhost:3001/api
+npm run dev                 # http://localhost:5173
+```
+
+Each step is expanded below: [creating the database](#how-to-create-the-postgresql-database),
+[environment variables](#environment-variables), [backend setup](#backend-setup),
+[frontend setup](#frontend-setup), [running `schema.sql`](#how-to-run-schemasql),
+and [running `seed.sql`](#how-to-run-seedsql).
 
 ## Project structure
 
