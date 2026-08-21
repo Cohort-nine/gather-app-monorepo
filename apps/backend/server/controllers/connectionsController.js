@@ -1,7 +1,7 @@
 // ---------------------------------------------------------------------------
 // Connections — the social graph.
 //
-// GET    /api/users/search                     find people by handle
+// GET    /api/users/search                     find people by handle or exact email
 // POST   /api/connections                       send a request
 // GET    /api/connections                       my connections (+ direction)
 // PATCH  /api/connections/:otherUserId/accept
@@ -88,15 +88,30 @@ export async function searchUsers(req, res, next) {
       blocks.flatMap((b) => [b.blockerId, b.blockedId]).filter((id) => id !== req.user.id)
     );
 
+    // Handle search stays partial/substring — handles are the public,
+    // searchable identity here, same as any @username. Email is different:
+    // it's private by default, so it only matches EXACT (not contains), or
+    // "search" becomes "list everyone whose email contains @gmail.com" —
+    // a real enumeration leak handle search doesn't have. Only attempted
+    // when q looks like an email at all, so a plain name search doesn't
+    // pay for a pointless second clause.
+    const looksLikeEmail = q.includes("@");
+    const nameOrEmailMatch = looksLikeEmail
+      ? { OR: [{ handle: { contains: q } }, { email: { equals: q } }] }
+      : { handle: { contains: q } };
+
     const users = await prisma.user.findMany({
       where: {
-        // handle is CITEXT, so this is already case-insensitive at the DB level.
-        handle: { contains: q },
-        id: { notIn: [req.user.id, ...blockedIds] },
-        deletedAt: null,
-        // Absence of a privacy row (shouldn't happen post-signup, but not
-        // guaranteed for older/seeded rows) defaults to discoverable.
-        OR: [{ privacySettings: null }, { privacySettings: { discoverableByHandle: true } }]
+        AND: [
+          nameOrEmailMatch,
+          { id: { notIn: [req.user.id, ...blockedIds] } },
+          { deletedAt: null },
+          // Absence of a privacy row (shouldn't happen post-signup, but not
+          // guaranteed for older/seeded rows) defaults to discoverable. Same
+          // flag gates the email-exact match too — someone who opted out of
+          // being found stays opted out, even if you already know their email.
+          { OR: [{ privacySettings: null }, { privacySettings: { discoverableByHandle: true } }] }
+        ]
       },
       select: smallUser,
       take: limit,

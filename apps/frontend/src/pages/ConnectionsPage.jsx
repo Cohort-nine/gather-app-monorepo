@@ -112,12 +112,16 @@ export default function ConnectionsPage() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by handle"
+            placeholder="Search by handle, or their exact email"
           />
           <button type="submit" disabled={searching}>
             {searching ? "Searching..." : "Search"}
           </button>
         </form>
+        <small>
+          Handle search matches partial names. Email only matches the complete
+          address — we don't let you browse people by email fragment.
+        </small>
 
         {searchError ? <p className="status status--error">{searchError}</p> : null}
 

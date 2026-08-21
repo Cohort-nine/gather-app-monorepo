@@ -256,7 +256,9 @@ describe("searchUsers", () => {
 
     expect(prismaMock.user.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({ id: { notIn: [USER_A, USER_B] } })
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([{ id: { notIn: [USER_A, USER_B] } }])
+        })
       })
     );
   });
@@ -268,6 +270,47 @@ describe("searchUsers", () => {
 
     expect(res.status).toHaveBeenCalledWith(400);
     expect(prismaMock.user.findMany).not.toHaveBeenCalled();
+  });
+
+  it("matches handle as a partial/substring for a plain query", async () => {
+    prismaMock.userBlock.findMany.mockResolvedValue([]);
+    prismaMock.user.findMany.mockResolvedValue([]);
+
+    const req = { user: { id: USER_A }, query: { q: "may" } };
+    const res = mockRes();
+    await searchUsers(req, res, vi.fn());
+
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([{ handle: { contains: "may" } }])
+        })
+      })
+    );
+  });
+
+  it("matches email as an exact lookup only, never a substring, when the query looks like an email", async () => {
+    prismaMock.userBlock.findMany.mockResolvedValue([]);
+    prismaMock.user.findMany.mockResolvedValue([]);
+
+    const req = { user: { id: USER_A }, query: { q: "maya@example.com" } };
+    const res = mockRes();
+    await searchUsers(req, res, vi.fn());
+
+    expect(prismaMock.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          AND: expect.arrayContaining([
+            {
+              OR: [
+                { handle: { contains: "maya@example.com" } },
+                { email: { equals: "maya@example.com" } }
+              ]
+            }
+          ])
+        })
+      })
+    );
   });
 });
 
