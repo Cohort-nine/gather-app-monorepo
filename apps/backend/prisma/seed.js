@@ -138,6 +138,14 @@ async function seedUsers() {
         passwordHash,
         lastLoginAt: daysFromNow(-2),
         displayName: p.displayName,
+        // Keyed on the handle, so a person keeps the same face across reseeds
+        // and across the card, the attendee list, and the nav. Two people are
+        // deliberately left without one, so the initials fallback stays a
+        // visible path rather than dead code.
+        avatarUrl:
+          p.handle === "cal_dunn" || p.handle === "nina_castro"
+            ? null
+            : `https://i.pravatar.cc/160?u=${p.handle}`,
         bio: p.bio ?? null,
         homeCity: p.city,
         homeLat: p.lat,
@@ -480,6 +488,10 @@ async function seedEvents(users, categories) {
       lng: -82.997,
       capacity: 25,
       status: "draft",
+      // No cover yet — a half-finished draft is exactly the case the
+      // placeholder mark exists for, so leaving one event without an image
+      // keeps that path visible instead of theoretical.
+      image: false,
       tags: []
     }
   ];
@@ -500,6 +512,19 @@ async function seedEvents(users, categories) {
         title: d.title,
         slug: d.slug,
         description: d.description,
+        // Cover photo, derived from the slug rather than listed per event, so
+        // every event gets a stable distinct image and adding one needs no
+        // extra work. Seeded by slug means the same event always gets the same
+        // photo — a random URL would reshuffle the whole grid on every reload.
+        //
+        // An absolute URL on purpose. Uploaded covers land in
+        // apps/backend/uploads/, which is an ephemeral filesystem on Render's
+        // free tier — they vanish on the next redeploy. resolveMediaUrl()
+        // passes absolute http(s) through untouched, so these survive.
+        //
+        // `image: false` on a definition opts out, which keeps the
+        // placeholder-mark path visible somewhere in the seed.
+        imageUrl: d.image === false ? null : `https://picsum.photos/seed/gather-${d.slug}/800/450`,
         startsAt,
         endsAt,
         // CHECK: rsvp_closes_at must be <= starts_at.
