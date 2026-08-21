@@ -4,6 +4,7 @@ import { fetchCategories, fetchEvents } from "../api/events.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useEventRsvp } from "../lib/useEventRsvp.js";
 import EventCard from "../components/EventCard.jsx";
+import FriendsEventsSection from "../components/FriendsEventsSection.jsx";
 import "./EventsPage.css";
 
 export default function EventsPage() {
@@ -125,6 +126,19 @@ export default function EventsPage() {
           ))}
         </ul>
       )}
+
+      {/* Moved here from the homepage, and placed below the full listing on
+          purpose. Browse's job is "show me what's on"; this is a narrower cut
+          of the same events, so it belongs after the complete answer rather
+          than in front of it — otherwise the first thing on a browse page is
+          a partial list, which is the wrong promise.
+
+          The homepage was the wrong home for a different reason: it's the one
+          page signed-out visitors see, and this only ever renders for a
+          signed-in user, so it was dead space in every first impression.
+
+          Renders nothing at all when signed out, on error, or while loading. */}
+      {user ? <FriendsEventsSection /> : null}
     </main>
   );
 }

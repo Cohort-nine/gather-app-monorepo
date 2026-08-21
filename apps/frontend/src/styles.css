@@ -2,6 +2,13 @@
    Default: dark mode. Add .theme-light on <html> to switch to light theme. */
 :root {
   font-family: "Manrope", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  /* Tells the browser which palette to paint native UI in — dropdown popups,
+     scrollbars, date and time pickers, autofill highlights, spinner arrows.
+     Without it Chrome assumes light and renders the <select> popup on white,
+     so near-white option text vanished into it. CSS can't style inside that
+     popup; this is the only hook there is. */
+  color-scheme: dark;
   /* The homepage hero uses this for GATHER and its own nav wordmark — carrying
      it onto every page's h1 is what makes the text-only pages still read as
      the same brand instead of falling back to a generic app UI once the
@@ -16,38 +23,79 @@
   --panel-border: rgba(255,255,255,0.06);
   --surface-bg: rgba(255,255,255,0.02);
   --surface-border: rgba(255,255,255,0.06);
-  /* Pure black-and-white brand — no hue anywhere. Depth and emphasis come
-     from --glow (a light bleed, since a dark box-shadow is invisible on a
-     near-black page) instead of a color accent. */
-  --accent: #F5F5F5;            /* near-white, used for CTAs/links/emphasis */
-  --accent-strong: #FFFFFF;    /* hover/emphasis — brighter reads as "stronger" on dark */
-  --accent-ink: #0b0d0f;       /* text/icon color to sit on top of an accent-filled surface */
+  /* One accent, teal, used sparingly — CTAs, links, active nav, focus rings,
+     the eyebrow. Everything else stays neutral, so the colour still means
+     "this is interactive" rather than becoming wallpaper.
+
+     Deliberately cyan-leaning (hue 174) rather than a green-leaning teal.
+     #16a34a "going" sits at hue 142, so this keeps ~32 degrees of separation
+     and can't be misread as a status. Status pills also carry a text label
+     and a border, never colour alone, so the distinction survives for anyone
+     who can't separate the two hues at all.
+
+     10.46:1 on the page background — well past AA, and comfortable rather
+     than shouting. */
+  --accent: #2DD4BF;
+  --accent-strong: #5EEAD4;    /* hover/emphasis — brighter reads as "stronger" on dark */
+  --accent-ink: #062F2B;       /* deep teal-black for text sitting ON an accent fill (7.78:1) */
   --muted: #9ca3af;            /* neutral gray — the old #94a3b8 (slate) carried a faint blue tint */
+  /* Form controls need 3:1 against their own background (WCAG 1.4.11), which
+     a decorative hairline doesn't. Keeping them separate means inputs are
+     findable without making every card outline heavy. */
+  --field-border: #5A6167;
+  /* Solid, opaque surface for native popup menus. The <select> itself sits on
+     a translucent --surface-bg, which is fine inside a panel but useless to
+     the OS dropdown: it paints its own window and needs a real colour, not
+     2% white over nothing. */
+  --menu-bg: #16191c;
   --shadow: 0 10px 30px rgba(0,0,0,0.6);
-  --glow: 0 0 0 1px rgba(255,255,255,0.14), 0 0 20px rgba(255,255,255,0.22), 0 0 48px rgba(255,255,255,0.1);
+  --glow: 0 0 0 1px rgba(45,212,191,0.35), 0 0 20px rgba(45,212,191,0.28), 0 0 48px rgba(45,212,191,0.12);
 }
 
 /* Light theme overrides when .theme-light is present on <html> */
+/* Light theme overrides when .theme-light is present on <html>.
+
+   Warm paper rather than white. The old theme put #ffffff panels on an
+   #f3f4f6 page — 100% and 90% luminance, side by side, which is genuinely
+   tiring to read for any length of time and washes the hairlines out to
+   nothing. Dropping the page to 82% and panels to 92% keeps the same
+   relationship (panels still read as lifted) at a brightness you can sit in
+   front of, and the slight warmth stops it feeling clinical.
+
+   Text contrast went up, not down: ink on panel is 14.88:1 here versus the
+   old 13.9:1. Dimmer and more readable are not in tension — the glare was
+   never doing the reading any favours. */
 .theme-light {
-  --color-ink: #1f2937;
-  --color-paper: #111827;
-  --bg: #f3f4f6;
-  --panel-bg: #ffffff;
-  --panel-border: #d1d5db;
-  --surface-bg: #ffffff;
-  --surface-border: #cbd5e1;
-  --accent: #0b0d0f;           /* near-black, the light theme's mirror of dark theme's bg */
-  --accent-strong: #000000;    /* hover/emphasis — darker reads as "stronger" on light */
-  --accent-ink: #ffffff;       /* text/icon color to sit on top of an accent-filled surface */
-  --muted: #6b7280;
-  --shadow: 0 10px 30px rgba(15,23,42,0.06);
-  /* No white to bleed on a light page — depth here is a conventional soft
-     shadow ring instead of a glow. */
-  --glow: 0 0 0 1px rgba(15,23,42,0.08), 0 8px 24px rgba(15,23,42,0.12);
+  color-scheme: light;
+  --color-ink: #23211E;        /* warm near-black, 14.88:1 on panel */
+  --color-paper: #1a1815;
+  --bg: #EDEAE4;
+  --panel-bg: #F8F6F2;
+  --panel-border: #D8D2C7;
+  --surface-bg: #FCFBF8;
+  --surface-border: #CCC5B8;
+  --accent: #0F766E;           /* deep teal — 5.07:1 on panel, white on it is 5.47:1 */
+  --accent-strong: #115E59;    /* hover/emphasis — darker reads as "stronger" on light */
+  --accent-ink: #FFFFFF;       /* text/icon color to sit on top of an accent-filled surface */
+  --muted: #655F55;            /* warm gray, 5.86:1 on panel (the old #6b7280 was cooler and weaker) */
+  --field-border: #8F8676;     /* 3.33:1 on panel — inputs stay findable */
+  --menu-bg: #FFFFFF;
+  --shadow: 0 10px 30px rgba(35,33,30,0.07);
+  /* No white to bleed on a light page — depth here is a soft teal-tinted ring
+     instead of a glow, so focus still reads as the accent. */
+  --glow: 0 0 0 1px rgba(15,118,110,0.45), 0 8px 24px rgba(35,33,30,0.12);
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Belt and braces for the popup itself. Firefox and Chrome on Windows both
+   honour a background on <option>; Safari ignores it and relies on
+   color-scheme instead. */
+select option {
+  background-color: var(--menu-bg);
+  color: var(--color-ink);
 }
 
 body {
@@ -134,9 +182,11 @@ textarea {
 
 .eyebrow {
   color: var(--accent-strong);
-  /* With no hue to set it apart from body text, a soft glow is what makes
-     this read as "emphasis" instead of just slightly-brighter ink. */
-  text-shadow: 0 0 16px rgba(255, 255, 255, 0.35);
+  /* The glow existed because a near-white eyebrow on a near-black page had no
+     hue to separate it from body text — brightness was the only signal left.
+     Now that the accent carries hue, the halo is doing much less work, so it
+     drops to a faint teal breath rather than a white one. */
+  text-shadow: 0 0 16px rgba(94, 234, 212, 0.25);
   font-size: 0.875rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -171,7 +221,7 @@ textarea {
 .form select,
 .form textarea {
   width: 100%;
-  border: 1px solid var(--surface-border);
+  border: 1px solid var(--field-border);
   border-radius: 10px;
   padding: 10px 12px;
   background: var(--surface-bg);
