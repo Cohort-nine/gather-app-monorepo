@@ -206,9 +206,13 @@
   color: #dc2626;
 }
 
+/* This one fills rather than tints — deleting an event is the most
+   destructive action in the app, so it goes further than the cancel buttons.
+   Same red bloom around it, so it's recognisably the same family. */
 .event-form__danger:hover:not(:disabled) {
   background: #dc2626;
   color: #ffffff;
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.5), 0 0 20px rgba(220, 38, 38, 0.38);
 }
 
 .event-form button:disabled {

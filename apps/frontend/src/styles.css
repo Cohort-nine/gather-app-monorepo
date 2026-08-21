@@ -149,6 +149,17 @@ textarea {
   border-radius: 6px;
 }
 
+/* Destructive controls get a red ring instead of the brand one. A navy halo
+   around "Cancel RSVP" says "this is the brand"; red says "this removes
+   something" — which is the more useful thing to tell someone at the exact
+   moment their finger is on the key. Listed explicitly rather than inferred,
+   so adding a new destructive control is a deliberate act. */
+.my-rsvps__cancel:focus-visible,
+.event-detail__cancel:focus-visible,
+.event-form__danger:focus-visible {
+  outline-color: #dc2626;
+}
+
 .page {
   max-width: 1080px;
   margin: 0 auto;
@@ -284,12 +295,59 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.6rem;
   margin-top: 1rem;
   padding-top: 0.9rem;
   border-top: 1px solid var(--panel-border);
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+/* Row actions as buttons rather than links.
+
+   These were the last raw <a>s in the app — underlined, and inheriting the
+   global accent, which in the light theme is a deep navy that reads as a
+   default browser link. Next to a card with a border, a figure, and a status
+   pill, that looked like markup nobody had got to yet.
+
+   Outlined rather than filled: there are two or three of them per row across
+   a list, and a column of filled buttons would fight the content for
+   attention. They're secondary actions and should look it. */
+.event-list .event-card__footer a,
+.event-list .event-card__footer button {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--surface-border);
+  background: var(--surface-bg);
+  color: var(--color-ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.event-list .event-card__footer a:hover,
+.event-list .event-card__footer button:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.event-list .event-card__footer button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  /* Comfortable tap targets once they're real controls. */
+  .event-list .event-card__footer a,
+  .event-list .event-card__footer button {
+    min-height: 44px;
+  }
 }
 
 .panel {

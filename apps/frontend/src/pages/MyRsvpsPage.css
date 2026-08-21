@@ -67,23 +67,29 @@
   background: color-mix(in srgb, var(--muted) 15%, transparent);
 }
 
-/* Destructive, so it stays a quiet text button and only turns red on hover —
-   it shouldn't compete with "View details" for attention when you're just
-   scanning what you signed up for. */
-.my-rsvps__cancel {
-  background: none;
-  border: none;
-  padding: 0;
-  font: inherit;
-  font-weight: 600;
+/* Shares the pill shape with the other row actions, but muted — destructive,
+   so it shouldn't compete with "View details" while you're just scanning. The
+   red only arrives on hover, at the moment it becomes relevant.
+
+   Selected through the full path rather than with !important: three classes
+   outrank the two-classes-plus-element rule in styles.css on specificity
+   alone, so the override is honest and still overridable later. */
+.event-list .event-card__footer .my-rsvps__cancel {
   color: var(--muted);
-  text-decoration: underline;
-  cursor: pointer;
-  width: auto;
 }
 
-.my-rsvps__cancel:hover:not(:disabled) {
+/* Lights up red on hover — the same glow language the accent buttons use,
+   in the colour of the thing it does. A border colour change alone was too
+   subtle for a destructive action; this makes it unmistakable at the moment
+   your cursor lands on it, while staying quiet the rest of the time.
+
+   The tint plus the ring plus the bloom, so it reads as "armed" rather than
+   just "outlined". */
+.event-list .event-card__footer .my-rsvps__cancel:hover:not(:disabled) {
+  border-color: #dc2626;
   color: #dc2626;
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+  box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.45), 0 0 18px rgba(220, 38, 38, 0.32);
 }
 
 .my-rsvps__cancel:disabled {
