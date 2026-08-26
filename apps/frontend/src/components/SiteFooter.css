@@ -79,6 +79,17 @@
   line-height: 1.6;
 }
 
+.site-footer__copyright {
+  max-width: 1080px;
+  margin: 8px auto 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.site-footer__copyright a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 @media (max-width: 640px) {
   .site-footer {
     padding: 32px 16px 40px;

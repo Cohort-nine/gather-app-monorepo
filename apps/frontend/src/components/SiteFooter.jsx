@@ -36,6 +36,12 @@ export default function SiteFooter() {
         Built as a capstone project. Reliability scores are derived from
         attendance history, not self-reported.
       </p>
+      <p className="site-footer__copyright">
+        &copy; {new Date().getFullYear()}{' '}
+        <a href="https://github.com/cohortjuan" target="_blank" rel="noopener noreferrer">
+          github.com/cohortjuan
+        </a>
+      </p>
     </footer>
   );
 }

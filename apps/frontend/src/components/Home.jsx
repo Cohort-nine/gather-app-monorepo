@@ -32,9 +32,6 @@ export default function Home() {
             each one carries its own scrim and border and stays legible over
             sky, crowd, or rooftop alike. */}
         <div className="home__nav-side">
-          <Link className="home__nav-btn" to="/events">
-            Browse
-          </Link>
           <Link className="home__nav-btn home__nav-btn--primary" to="/events/new">
             Host a gathering
           </Link>
@@ -140,6 +137,16 @@ export default function Home() {
             Find something near you
           </Link>
         </div>
+
+        {/* Home skips SiteFooter entirely (see App.jsx) since its own hero
+            already closes the page -- but that meant this was the one page
+            with no copyright line at all. */}
+        <p className="home__copyright">
+          &copy; {new Date().getFullYear()}{' '}
+          <a href="https://github.com/cohortjuan" target="_blank" rel="noopener noreferrer">
+            github.com/cohortjuan
+          </a>
+        </p>
       </header>
 
       {/* Meetup-style social proof: only worth showing once someone has

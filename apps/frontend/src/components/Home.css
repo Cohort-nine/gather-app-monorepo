@@ -231,6 +231,23 @@
   object-fit: cover;
 }
 
+.home__copyright {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 14px;
+  z-index: 2;
+  margin: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.78rem;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+}
+.home__copyright a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 .home__hero::after {
   content: '';
   position: absolute;
