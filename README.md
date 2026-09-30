@@ -1,6 +1,6 @@
 # Gather
 
-### 🔴 [**Live demo → __FRONTEND_HOST__**](https://__FRONTEND_HOST__/)
+### 🔴 [**Live demo → gather-app-juan.vercel.app**](https://gather-app-juan.vercel.app/)
 
 A social events app: host a gathering, RSVP to one, and build a track record of
 actually showing up.
@@ -325,12 +325,12 @@ Important production variables (examples):
   - DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>?schema=public
   - JWT_SECRET=<secure random string, >=32 chars>
   - DIRECT_URL=<same database, used by `prisma migrate deploy` during the build>
-  - CORS_ORIGIN=https://__FRONTEND_HOST__,https://gather-app-*.vercel.app
+  - CORS_ORIGIN=https://gather-app-juan.vercel.app,https://gather-app-*.vercel.app
     - The wildcard allows this project's Vercel preview deployments.
 
 Production service URLs (current deployments)
 
-- Frontend (Vercel): https://__FRONTEND_HOST__
+- Frontend (Vercel): https://gather-app-juan.vercel.app
 - Backend (Render): https://gather-api-07it.onrender.com
 - Database: Supabase (Postgres 17), connected through the session pooler
 
