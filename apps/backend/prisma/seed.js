@@ -32,6 +32,46 @@ const DAY = 24 * HOUR;
 const now = Date.now();
 
 const daysFromNow = (d) => new Date(now + d * DAY);
+
+/**
+ * The same calendar day, at a sensible local start time. Without this every
+ * event starts at whatever minute the seed happened to run — a dinner at
+ * 2:37 PM reads as a bug, not a demo.
+ */
+function atEasternHour(date, hour) {
+  const offset = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    timeZoneName: "shortOffset"
+  })
+    .formatToParts(date)
+    .find((part) => part.type === "timeZoneName").value; // e.g. "GMT-4"
+  const hoursFromUtc = Number(offset.replace("GMT", "")) || 0;
+  const result = new Date(date);
+  result.setUTCHours(hour - hoursFromUtc, 0, 0, 0);
+  return result;
+}
+
+// Local start hour for each seeded event, keyed like the definitions below.
+const START_HOURS = {
+  potluckMarch: 18,
+  trailRun: 8,
+  gameNightApril: 19,
+  ceramicsIntro: 13,
+  potluckNext: 18,
+  openMic: 19,
+  smallDinner: 19,
+  gameNightNext: 18,
+  sqlWorkshop: 18,
+  unlistedBirthday: 17,
+  cancelledHike: 6,
+  draftPicnic: 12,
+  bonfireRecent: 19,
+  bikeLoop: 9,
+  crochetCircle: 14,
+  vinylNight: 20,
+  triviaNight: 19,
+  gardenDay: 10
+};
 const hoursBefore = (date, h) => new Date(date.getTime() - h * HOUR);
 
 /** connections stores one row per pair, canonically ordered (low < high). */
@@ -608,7 +648,7 @@ async function seedEvents(users, categories) {
   const events = {};
 
   for (const d of defs) {
-    const startsAt = d.startsAt;
+    const startsAt = START_HOURS[d.key] === undefined ? d.startsAt : atEasternHour(d.startsAt, START_HOURS[d.key]);
     const status = d.status ?? "published";
     const endsAt = new Date(startsAt.getTime() + d.hours * HOUR);
 
@@ -694,7 +734,15 @@ async function createRsvp(event, user, opts = {}) {
     note = null
   } = opts;
 
-  const respondedAt = new Date(event.startsAt.getTime() - respondedDaysBeforeStart * DAY);
+  // Never in the future: for an event nine days out, "responded 3 days before
+  // start" would otherwise land six days from now. Clamp to the recent past,
+  // keeping the same relative spacing between people.
+  const respondedAt = new Date(
+    Math.min(
+      event.startsAt.getTime() - respondedDaysBeforeStart * DAY,
+      now - respondedDaysBeforeStart * 3 * HOUR
+    )
+  );
   const cancelledAt =
     cancelledHoursBefore === null ? null : hoursBefore(event.startsAt, cancelledHoursBefore);
 
