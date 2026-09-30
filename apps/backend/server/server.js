@@ -1,25 +1,43 @@
 import cors from "cors";
 import dotenv from "dotenv";
 import express from "express";
+import rateLimit from "express-rate-limit";
 import multer from "multer";
 import apiRoutes from "./routes/index.js";
 import { buildCorsOptions, describeCorsPolicy } from "./lib/cors.js";
-import { UPLOAD_DIR } from "./lib/upload.js";
+import { serveUploadedImage } from "./lib/upload.js";
 
 dotenv.config();
 
 const app = express();
 const port = Number(process.env.PORT) || 3001;
 
+// Render (and most hosts) put a proxy in front of the app. Trusting the first
+// hop makes req.ip the visitor's address rather than the proxy's, which is
+// what the rate limiter below keys on.
+app.set("trust proxy", 1);
+app.disable("x-powered-by");
+
 // Allowed origins come from CORS_ORIGIN — see server/lib/cors.js. Locally this
 // falls back to Vite's dev server so nothing needs configuring to run the app.
 app.use(cors(buildCorsOptions()));
-app.use(express.json());
+app.use(express.json({ limit: "100kb" }));
 
-// Avatars and event cover images, written by server/lib/upload.js. Known to
-// be ephemeral on Render's free tier (the disk doesn't survive a redeploy) —
-// an accepted tradeoff for this project, not a bug to fix here.
-app.use("/uploads", express.static(UPLOAD_DIR));
+// Password guessing is the one attack a public demo realistically sees.
+// Twenty attempts per IP per fifteen minutes is invisible to a real person
+// and makes brute-forcing a demo password impractical.
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many attempts. Please wait a few minutes and try again." }
+});
+app.use(["/api/auth/login", "/api/auth/signup"], authLimiter);
+
+// Avatars and event cover images live in the database (see server/lib/upload.js)
+// and are served from the same /uploads/<id>.<ext> paths as before.
+app.get("/uploads/:filename", serveUploadedImage);
 
 app.use("/api", apiRoutes);
 
@@ -57,6 +75,17 @@ app.use((err, _req, res, _next) => {
   if (err.code === "P2003") {
     return res.status(400).json({ message: "Referenced record does not exist." });
   }
+  // A malformed id reached the database (e.g. a non-UUID in a path).
+  if (err.code === "P2023") {
+    return res.status(400).json({ message: "Malformed id." });
+  }
+  // A body that isn't valid JSON, or is larger than the limit above.
+  if (err.type === "entity.parse.failed") {
+    return res.status(400).json({ message: "Request body must be valid JSON." });
+  }
+  if (err.type === "entity.too.large") {
+    return res.status(413).json({ message: "Request body is too large." });
+  }
   if (err.code === "P2025") {
     return res.status(404).json({ message: "Record not found." });
   }
@@ -70,6 +99,12 @@ app.use((err, _req, res, _next) => {
   }
 
   res.status(500).json({ message: "Something went wrong on the server." });
+});
+
+// Last line of defence. Route handlers pass errors to next(), but a stray
+// rejected promise shouldn't take the whole API down with it.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
 });
 
 app.listen(port, () => {

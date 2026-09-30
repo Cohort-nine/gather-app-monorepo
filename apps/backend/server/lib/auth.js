@@ -15,6 +15,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import prisma from "../db/prisma.js";
+import { isUuid } from "./validateEvent.js";
 
 const TOKEN_TTL = "7d";
 const BCRYPT_ROUNDS = 12;
@@ -52,6 +53,33 @@ function readToken(req) {
   return header.slice(7).trim() || null;
 }
 
+const SESSION_USER_SELECT = {
+  id: true,
+  handle: true,
+  email: true,
+  displayName: true,
+  avatarUrl: true
+};
+
+/**
+ * Verify a token's signature and expiry. Returns the payload, or an error name
+ * ("TokenExpiredError", "JsonWebTokenError") when the token is bad. Kept apart
+ * from the database lookup so a database outage surfaces as a 500 — not as
+ * "invalid session", which would make the frontend sign everyone out.
+ */
+function verifyToken(token) {
+  try {
+    return { payload: jwt.verify(token, requireSecret()) };
+  } catch (error) {
+    return { error: error.name };
+  }
+}
+
+// Re-read the user rather than trusting the token body: an account may have
+// been deleted or deactivated since the token was issued.
+const findSessionUser = (id) =>
+  prisma.user.findFirst({ where: { id, deletedAt: null }, select: SESSION_USER_SELECT });
+
 /**
  * Attach req.user when a valid token is present. Does NOT reject when it's
  * missing — use for endpoints that behave differently for signed-in users but
@@ -61,20 +89,17 @@ export async function optionalAuth(req, _res, next) {
   const token = readToken(req);
   if (!token) return next();
 
-  try {
-    const payload = jwt.verify(token, requireSecret());
-    // Re-read the user rather than trusting the token body: an account may
-    // have been deleted or deactivated since the token was issued.
-    const user = await prisma.user.findFirst({
-      where: { id: payload.sub, deletedAt: null },
-      select: { id: true, handle: true, email: true, displayName: true, avatarUrl: true }
-    });
-    if (user) req.user = user;
-  } catch {
-    // An invalid token on an optional route is simply treated as anonymous.
-  }
+  // An invalid token on an optional route is simply treated as anonymous.
+  const { payload } = verifyToken(token);
+  if (!payload) return next();
 
-  next();
+  try {
+    const user = await findSessionUser(payload.sub);
+    if (user) req.user = user;
+    next();
+  } catch (error) {
+    next(error);
+  }
 }
 
 /** Reject anything without a valid token. */
@@ -85,24 +110,25 @@ export async function requireAuth(req, res, next) {
     return res.status(401).json({ message: "You must be signed in to do that." });
   }
 
-  try {
-    const payload = jwt.verify(token, requireSecret());
-    const user = await prisma.user.findFirst({
-      where: { id: payload.sub, deletedAt: null },
-      select: { id: true, handle: true, email: true, displayName: true, avatarUrl: true }
+  const { payload, error } = verifyToken(token);
+  if (!payload) {
+    return res.status(401).json({
+      message:
+        error === "TokenExpiredError"
+          ? "Your session expired. Please sign in again."
+          : "Invalid session token."
     });
+  }
 
+  try {
+    const user = await findSessionUser(payload.sub);
     if (!user) {
       return res.status(401).json({ message: "That account no longer exists." });
     }
-
     req.user = user;
     next();
-  } catch (error) {
-    const expired = error.name === "TokenExpiredError";
-    return res.status(401).json({
-      message: expired ? "Your session expired. Please sign in again." : "Invalid session token."
-    });
+  } catch (dbError) {
+    next(dbError);
   }
 }
 
@@ -114,14 +140,25 @@ export async function requireAuth(req, res, next) {
  * stops one user editing another user's event.
  */
 export async function requireEventPermission(req, res, next, permission = "canEdit") {
-  const event = await prisma.event.findUnique({
-    where: { id: req.params.id },
-    select: {
-      id: true,
-      hostId: true,
-      cohosts: { select: { userId: true, canEdit: true, canManageRsvps: true } }
-    }
-  });
+  if (!isUuid(req.params.id)) {
+    return res.status(400).json({ message: "id must be a valid UUID" });
+  }
+
+  let event;
+  try {
+    event = await prisma.event.findUnique({
+      where: { id: req.params.id },
+      select: {
+        id: true,
+        hostId: true,
+        cohosts: { select: { userId: true, canEdit: true, canManageRsvps: true } }
+      }
+    });
+  } catch (error) {
+    // Express 4 doesn't catch rejected promises from async middleware; without
+    // this a database hiccup here would crash the whole process.
+    return next(error);
+  }
 
   if (!event) {
     return res.status(404).json({ message: "Event not found" });

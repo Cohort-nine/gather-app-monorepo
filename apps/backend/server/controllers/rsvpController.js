@@ -20,6 +20,43 @@ const HOUR = 60 * 60 * 1000;
 /** Hours between now and the event start. Negative once it has begun. */
 const hoursUntil = (startsAt) => (new Date(startsAt).getTime() - Date.now()) / HOUR;
 
+const RSVP_STATUSES = ["going", "waitlisted", "cancelled", "declined"];
+
+/**
+ * Seats in use: every 'going' RSVP plus the guests it brings. Capacity is a
+ * headcount, so a person bringing two guests takes three seats — counting
+ * RSVP rows alone would let an event quietly overfill.
+ */
+export async function seatsTaken(eventId, db = prisma) {
+  const agg = await db.rsvp.aggregate({
+    where: { eventId, status: "going" },
+    _count: { _all: true },
+    _sum: { guestCount: true }
+  });
+  return agg._count._all + (agg._sum.guestCount ?? 0);
+}
+
+/**
+ * Shift everyone behind `fromPosition` up one place, one row at a time in
+ * ascending order. A single `UPDATE ... SET position = position - 1` can trip
+ * the unique (event_id, waitlist_position) index mid-statement, because
+ * Postgres checks non-deferrable uniqueness row by row in physical order.
+ * Waitlists are short, so the per-row loop costs nothing noticeable.
+ */
+async function closeWaitlistGap(tx, eventId, fromPosition) {
+  const behind = await tx.rsvp.findMany({
+    where: { eventId, status: "waitlisted", waitlistPosition: { gt: fromPosition } },
+    orderBy: { waitlistPosition: "asc" },
+    select: { id: true, waitlistPosition: true }
+  });
+  for (const row of behind) {
+    await tx.rsvp.update({
+      where: { id: row.id },
+      data: { waitlistPosition: row.waitlistPosition - 1 }
+    });
+  }
+}
+
 /** POST /api/events/:id/rsvp */
 export async function createOrUpdateRsvp(req, res, next) {
   const { id } = req.params;
@@ -32,10 +69,7 @@ export async function createOrUpdateRsvp(req, res, next) {
   }
 
   try {
-    const event = await prisma.event.findUnique({
-      where: { id },
-      include: { _count: { select: { rsvps: { where: { status: "going" } } } } }
-    });
+    const event = await prisma.event.findUnique({ where: { id } });
 
     if (!event) return res.status(404).json({ message: "Event not found" });
 
@@ -95,8 +129,8 @@ export async function createOrUpdateRsvp(req, res, next) {
     }
 
     // ---- decide: going, or waitlisted? -----------------------------------
-    const seatsTaken = event._count.rsvps;
-    const full = event.capacity !== null && seatsTaken + 1 + guestCount > event.capacity;
+    const taken = event.capacity === null ? 0 : await seatsTaken(id);
+    const full = event.capacity !== null && taken + 1 + guestCount > event.capacity;
 
     if (full && !event.allowWaitlist) {
       return res.status(409).json({ message: "This event is full." });
@@ -224,14 +258,7 @@ export async function cancelRsvp(req, res, next) {
 
       // Close the gap left in the waitlist so positions stay 1..n.
       if (rsvp.status === "waitlisted" && rsvp.waitlistPosition !== null) {
-        await tx.rsvp.updateMany({
-          where: {
-            eventId: id,
-            status: "waitlisted",
-            waitlistPosition: { gt: rsvp.waitlistPosition }
-          },
-          data: { waitlistPosition: { decrement: 1 } }
-        });
+        await closeWaitlistGap(tx, id, rsvp.waitlistPosition);
       }
 
       return cancelled;
@@ -273,8 +300,8 @@ async function promoteFromWaitlist(eventId) {
     select: { capacity: true, startsAt: true, waitlistReliabilityFloor: true }
   });
 
-  const going = await prisma.rsvp.count({ where: { eventId, status: "going" } });
-  if (event.capacity !== null && going >= event.capacity) return null;
+  const taken = event.capacity === null ? 0 : await seatsTaken(eventId);
+  if (event.capacity !== null && taken >= event.capacity) return null;
 
   const floor = Number(event.waitlistReliabilityFloor ?? 0);
 
@@ -284,7 +311,12 @@ async function promoteFromWaitlist(eventId) {
     include: { user: { select: { reliability: { select: { score: true } } } } }
   });
 
-  const next = candidates.find((c) => Number(c.user.reliability?.score ?? 1) >= floor);
+  // First in line who clears the host's reliability floor AND fits in the
+  // seats that are actually free, guests included.
+  const fits = (c) => event.capacity === null || taken + 1 + (c.guestCount ?? 0) <= event.capacity;
+  const next = candidates.find(
+    (c) => Number(c.user.reliability?.score ?? 1) >= floor && fits(c)
+  );
   if (!next) return null;
 
   await prisma.$transaction(async (tx) => {
@@ -312,10 +344,7 @@ async function promoteFromWaitlist(eventId) {
       }
     });
 
-    await tx.rsvp.updateMany({
-      where: { eventId, status: "waitlisted", waitlistPosition: { gt: next.waitlistPosition } },
-      data: { waitlistPosition: { decrement: 1 } }
-    });
+    await closeWaitlistGap(tx, eventId, next.waitlistPosition);
 
     await tx.notification.create({
       data: {
@@ -554,6 +583,10 @@ export async function recomputeReliabilityFor(userIds) {
 /** GET /api/me/rsvps */
 export async function listMyRsvps(req, res, next) {
   const { status, upcoming } = req.query;
+
+  if (status && !RSVP_STATUSES.includes(status)) {
+    return res.status(400).json({ message: `status must be one of: ${RSVP_STATUSES.join(", ")}` });
+  }
 
   try {
     const rsvps = await prisma.rsvp.findMany({

@@ -1,9 +1,9 @@
 -- ============================================================================
 -- GATHER — seed data (raw SQL path)
 --
--- Produces the SAME database as `npm run db:seed` (prisma/seed.js). If you
--- change one, change the other — or the two setup paths drift apart, which is
--- exactly the bug this file was rewritten to fix.
+-- The core of `npm run db:seed` (prisma/seed.js), for the raw-SQL setup path.
+-- prisma/seed.js is the canonical, fuller dataset used for the live demo: it
+-- adds cover photos, avatars, and extra events on top of what's here.
 --
 -- Design rule this file follows, matching the schema:
 --   Scores are DERIVED. Nothing here hardcodes a reliability or reputation

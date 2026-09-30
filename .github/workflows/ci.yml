@@ -62,9 +62,13 @@ jobs:
   # deployed site silently drifts behind main — which is exactly what happened.
   #
   # The Vercel CLI authenticates with a token instead, which works on the free
-  # plan. VERCEL_TOKEN is the only secret; the org and project ids are not
-  # sensitive (they're already committed in apps/frontend/.vercel/project.json)
-  # but live here as variables so this file reads as self-contained.
+  # plan. VERCEL_TOKEN (a repository secret) is the only secret; the org and
+  # project ids below are not sensitive.
+  #
+  # The project lives on the maintainer's own Vercel account. The previous one
+  # belonged to a former teammate, and when that token stopped working every
+  # deploy hung at an auth prompt until the timeout cancelled it — three merges
+  # in a row never reached the live site.
   # ---------------------------------------------------------------------------
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -84,10 +88,20 @@ jobs:
         working-directory: apps/frontend
 
     env:
-      VERCEL_ORG_ID: team_nwfbXFBB5MLSmKAwxCanIAmP
-      VERCEL_PROJECT_ID: prj_JmEaAfiL423UAVTH9w1Kt2xH5udB
+      VERCEL_ORG_ID: team_jzowmA21EiEEZubgKf8KgalQ
+      VERCEL_PROJECT_ID: prj_ufabtV2J4wyWlLWmaXaPP1eT0ZkG
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
     steps:
+      # Fail in one second with a clear message rather than letting the CLI
+      # wait ten minutes at a login prompt when the secret is missing.
+      - name: Check the Vercel token is configured
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN secret is not set. Add it under Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
@@ -100,7 +114,7 @@ jobs:
         run: npm install --global vercel@58.10.0
 
       - name: Pull Vercel environment settings
-        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel pull --yes --environment=production --token=$VERCEL_TOKEN
 
       # The API base URL is NOT a secret. Vite inlines it into the bundle, so it
       # is readable by anyone who opens devtools and it appears in the URL of
@@ -113,7 +127,7 @@ jobs:
       # build is reproducible. This overwrites whatever `vercel pull` fetched.
       - name: Pin the API base URL
         env:
-          API_BASE_URL: https://gather-api-uw1k.onrender.com/api
+          API_BASE_URL: https://gather-api-07it.onrender.com/api
         run: |
           mkdir -p .vercel
           touch .vercel/.env.production.local
@@ -126,14 +140,14 @@ jobs:
       # Builds here rather than on Vercel's servers, so VITE_API_BASE_URL comes
       # from the file above and the output is inspectable in the log.
       - name: Build
-        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel build --prod --token=$VERCEL_TOKEN
 
       # Cheap insurance against a silent regression: if the compiled bundle does
       # not contain the API host, the frontend is pointed somewhere else again
       # and the deploy should fail loudly rather than ship a broken site.
       - name: Verify the API URL made it into the bundle
         run: |
-          if grep -rq "gather-api-uw1k.onrender.com" .vercel/output/static/assets/*.js; then
+          if grep -rq "gather-api-07it.onrender.com" .vercel/output/static/assets/*.js; then
             echo "OK: bundle points at the Render API."
           else
             echo "FAIL: built bundle does not reference the API host." >&2
@@ -146,4 +160,4 @@ jobs:
       # progress" indefinitely instead of failing. Every step before this one
       # passed; the deploy simply sat at the question.
       - name: Deploy
-        run: vercel deploy --prebuilt --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        run: vercel deploy --prebuilt --prod --yes --token=$VERCEL_TOKEN

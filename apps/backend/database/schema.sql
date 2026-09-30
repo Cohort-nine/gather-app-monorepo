@@ -5,6 +5,7 @@
 --   Source:  prisma/migrations/20260805000140_init/migration.sql
 --            prisma/migrations/20260806003934_add_auth/migration.sql
 --            prisma/migrations/20260820010257_add_event_image/migration.sql
+--            prisma/migrations/20260930140000_store_images_in_db/migration.sql
 --
 -- This file exists so the database can be created with plain SQL instead of
 -- Prisma. It is generated from the migrations rather than maintained by hand,
@@ -627,3 +628,34 @@ CREATE OR REPLACE VIEW connection_edges AS
     UNION ALL
     SELECT user_high AS user_id, user_low  AS peer_id, accepted_at
       FROM connections WHERE status = 'accepted';
+
+
+-- ----------------------------------------------------------------------------
+-- LATER MIGRATIONS
+-- Statements that can't be folded into a CREATE TABLE, replayed in order.
+-- ----------------------------------------------------------------------------
+
+-- 20260930140000_store_images_in_db
+-- Uploaded images (avatars, event covers) move off the web server's disk and
+-- into the database. Render's free tier has an ephemeral filesystem, so files
+-- written to disk vanished on every redeploy and every idle spin-down. A row
+-- here survives both. Images are capped at 5MB by the upload middleware, and
+-- the CHECKs below repeat both rules so the database enforces them too.
+
+CREATE TABLE "images" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "mime_type" TEXT NOT NULL,
+    "data" BYTEA NOT NULL,
+    "byte_size" INTEGER NOT NULL,
+    "created_at" TIMESTAMPTZ(6) NOT NULL DEFAULT now(),
+
+    CONSTRAINT "images_pkey" PRIMARY KEY ("id")
+);
+
+ALTER TABLE images
+    ADD CONSTRAINT images_mime_type_allowed
+    CHECK (mime_type IN ('image/jpeg', 'image/png', 'image/webp'));
+
+ALTER TABLE images
+    ADD CONSTRAINT images_byte_size_sane
+    CHECK (byte_size > 0 AND byte_size <= 5242880);

@@ -664,6 +664,23 @@ model Report {
 }
  
 // ============================================================================
+// UPLOADED IMAGES
+// ============================================================================
+
+/// Avatars and event cover images, stored in the database rather than on the
+/// web server's disk (which is wiped on every redeploy on Render's free tier).
+/// Referenced from users.avatar_url / events.image_url as "/uploads/<id>.<ext>".
+model StoredImage {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  mimeType  String   @map("mime_type")
+  data      Bytes
+  byteSize  Int      @map("byte_size")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("images")
+}
+
+// ============================================================================
 // NOTES — what Prisma can't express (put these in a raw SQL migration)
 // ============================================================================
 //

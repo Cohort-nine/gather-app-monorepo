@@ -52,7 +52,6 @@ export default function GatherIntro({ videoRef, logoSlotRef, onDone }) {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const skip = readPref() === 'minimal' || prefersReduced;
 
-    const overlay = overlayRef.current;
     const canvas = canvasRef.current;
     const stage = stageRef.current;
     const scrim = scrimRef.current;

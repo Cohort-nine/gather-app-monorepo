@@ -1,9 +1,26 @@
 # Gather
 
-### 🔴 [**Live demo → gather-app-beige.vercel.app**](https://gather-app-beige.vercel.app/)
+### 🔴 [**Live demo → __FRONTEND_HOST__**](https://__FRONTEND_HOST__/)
 
 A social events app: host a gathering, RSVP to one, and build a track record of
 actually showing up.
+
+### Try it
+
+Every demo account uses the password **`gather-demo-2026`**. Sign in with the
+handle.
+
+| Handle | What you'll see |
+| --- | --- |
+| `maya_ortiz` | **Start here.** A host: three events, a seat at a sold-out dinner with a waitlist behind it, a bonfire from two days ago that's waiting for her to mark who came, and an incoming connection request. |
+| `devon_park` | A reliable regular who brings guests along — see how guests count toward an event's capacity. |
+| `jonah_webb` | The cautionary tale: two no-shows and a late cancel, so his reliability badge reads *unreliable*. |
+| `lena_fox` | Has a draft event (only she can see it) and a block in place. |
+
+The API is on Render's free tier and sleeps after 15 minutes idle. The first
+request after a nap takes 30–60 seconds; the app shows a "waking up" notice and
+retries on its own. The demo data can be reset at any time, so feel free to
+click everything.
 
 ## Problem statement
 
@@ -174,7 +191,6 @@ and [running `seed.sql`](#how-to-run-seedsql).
         ├── database/
         │   ├── schema.sql               # raw SQL mirror of the schema, for teaching
         │   └── seed.sql
-        ├── uploads/                      # avatar/event images land here (gitignored)
         └── server/
             ├── db/
             │   └── prisma.js
@@ -233,12 +249,13 @@ and [running `seed.sql`](#how-to-run-seedsql).
 - **Account settings** — click your handle/avatar in the nav to reach your
   profile: replace your avatar, change your password, or change your login
   email (all require your current password to confirm identity first).
-- Uploaded images are stored on the backend's local disk (`apps/backend/uploads/`,
-  gitignored) and served via `express.static`, the same pattern as this
-  team's other project (Whispers App). This is a known tradeoff: Render's
-  free tier has an **ephemeral filesystem**, so uploaded files don't survive
-  a redeploy. Moving to S3/Cloudinary/similar is the one change needed before
-  this goes live for real.
+- Uploaded images are stored **in PostgreSQL** (the `images` table) and served
+  from `/uploads/<id>.<ext>` with a one-year immutable cache header. Render's
+  free tier wipes the local disk on every redeploy and idle spin-down, so
+  files written there used to vanish; a 5MB-capped row survives both and
+  needs no extra storage service.
+- **Rate limiting** — login and signup allow 20 attempts per IP per 15
+  minutes, so the shared demo password can't be brute-forced.
 
 ## The Gather database design
 
@@ -298,7 +315,7 @@ variables (Doppler is recommended for teams). See `apps/backend/.env.example` an
 Important production variables (examples):
 
 - Frontend (Vercel):
-  - VITE_API_BASE_URL=https://gather-api-uw1k.onrender.com/api
+  - VITE_API_BASE_URL=https://gather-api-07it.onrender.com/api
     - Include the `/api` suffix and do NOT include a trailing slash.
     - This variable is inlined by Vite at build time, so you must set it in
       Vercel and redeploy the frontend build.
@@ -307,13 +324,15 @@ Important production variables (examples):
   - NODE_ENV=production
   - DATABASE_URL=postgresql://<user>:<pass>@<host>:<port>/<db>?schema=public
   - JWT_SECRET=<secure random string, >=32 chars>
-  - CORS_ORIGIN=https://gather-app-beige.vercel.app,https://*.vercel.app
-    - Use the wildcard to allow Vercel preview branches.
+  - DIRECT_URL=<same database, used by `prisma migrate deploy` during the build>
+  - CORS_ORIGIN=https://__FRONTEND_HOST__,https://gather-app-*.vercel.app
+    - The wildcard allows this project's Vercel preview deployments.
 
 Production service URLs (current deployments)
 
-- Frontend (Vercel): https://gather-app-beige.vercel.app
-- Backend (Render): https://gather-api-uw1k.onrender.com
+- Frontend (Vercel): https://__FRONTEND_HOST__
+- Backend (Render): https://gather-api-07it.onrender.com
+- Database: Supabase (Postgres 17), connected through the session pooler
 
 Notes on localhost fallback
 
@@ -418,18 +437,20 @@ can't silently override them. Once your team is fully on Doppler you can delete
 
 ### Deploying
 
-This project is suitable for hosting the frontend as a static site on Vercel
-and the backend on Render (or similar). Example production setup:
+Both halves deploy automatically on every push to `main`:
 
-- Frontend (Vercel): set VITE_API_BASE_URL to `https://gather-api-uw1k.onrender.com/api`
-  and redeploy.
-- Backend (Render): set NODE_ENV=production, DATABASE_URL, JWT_SECRET, and
-  CORS_ORIGIN to include your Vercel domain(s) (e.g. `https://gather-app-beige.vercel.app,https://*.vercel.app`).
+- **Backend → Render.** Render watches `main`. Build command
+  `cd apps/backend && npm ci && npx prisma migrate deploy`, start command
+  `cd apps/backend && npm start`. New migrations apply on deploy.
+- **Frontend → Vercel.** The `deploy-frontend` job in
+  `.github/workflows/ci.yml` builds and deploys once tests pass. It needs one
+  repository secret, `VERCEL_TOKEN`, created at vercel.com/account/tokens.
 
-If you want I can add the concrete Vercel and Render service URLs here —
-please tell me the exact Vercel domain (e.g. `https://gather-app-beige.vercel.app`) and
-Render service URL (e.g. `https://gather-api-uw1k.onrender.com`) and I'll commit
-them into this README.
+**Seeding production.** `prisma/seed.js` deletes everything before it
+inserts, so with `NODE_ENV=production` it refuses to run unless `ALLOW_SEED=true`
+is set for that one run. To reset the live demo data: add `ALLOW_SEED=true`
+on Render, append `&& npm run db:seed` to the build command, deploy once, then
+undo both.
 
 ## How to create the PostgreSQL database
 

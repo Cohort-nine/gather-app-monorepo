@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { fetchCategories, fetchEvents } from "../api/events.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { useEventRsvp } from "../lib/useEventRsvp.js";

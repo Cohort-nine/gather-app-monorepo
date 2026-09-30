@@ -41,6 +41,7 @@ const orderPair = (a, b) => (a < b ? [a, b] : [b, a]);
 // Wipe. Order matters — children before parents.
 // ---------------------------------------------------------------------------
 async function reset() {
+  await prisma.storedImage.deleteMany();
   await prisma.report.deleteMany();
   await prisma.userBadge.deleteMany();
   await prisma.badge.deleteMany();
@@ -283,7 +284,7 @@ async function seedEvents(users, categories) {
       hostId: users.maya_ortiz.id,
       seriesId: potluck.id,
       categoryId: categories.food,
-      title: "Third Thursday Potluck — March",
+      title: "Third Thursday Potluck — Chili Cook-off",
       slug: "third-thursday-potluck-march",
       description: "Soup theme. Someone please bring bread.",
       startsAt: daysFromNow(-60),
@@ -356,9 +357,9 @@ async function seedEvents(users, categories) {
       hostId: users.maya_ortiz.id,
       seriesId: potluck.id,
       categoryId: categories.food,
-      title: "Third Thursday Potluck — Summer",
+      title: "Third Thursday Potluck — Soup Night",
       slug: "third-thursday-potluck-summer",
-      description: "Grill's working again. Bring something that likes fire.",
+      description: "Big pots, small bowls. Bring a soup, a bread, or just an appetite.",
       startsAt: daysFromNow(9),
       hours: 3,
       placeName: "Maya's place",
@@ -493,6 +494,114 @@ async function seedEvents(users, categories) {
       // keeps that path visible instead of theoretical.
       image: false,
       tags: []
+    },
+
+    // ---- DEMO EXTRAS -------------------------------------------------------
+    // Added so a live demo has a full browse grid in every category, and so
+    // Maya (the demo host) has an event that's over but not yet reviewed —
+    // the "mark who actually came" flow needs one to show off.
+    {
+      key: "bonfireRecent",
+      hostId: users.maya_ortiz.id,
+      categoryId: categories.food,
+      title: "Backyard Bonfire & S'mores",
+      slug: "backyard-bonfire-smores",
+      description: "Fire pit, folding chairs, too many marshmallows. Attendance still to be marked.",
+      startsAt: daysFromNow(-2),
+      hours: 3,
+      placeName: "Maya's backyard",
+      addressLine1: "418 Hamlet St",
+      lat: 39.9612,
+      lng: -82.9988,
+      capacity: 10,
+      tags: ["outdoor", "fire"]
+    },
+    {
+      key: "bikeLoop",
+      hostId: users.sam_reyes.id,
+      categoryId: categories.outdoors,
+      title: "Sunday Morning Bike Loop — Olentangy Trail",
+      slug: "sunday-bike-loop-olentangy",
+      description: "Twelve easy miles, no one gets dropped. Coffee stop at the halfway point.",
+      startsAt: daysFromNow(4),
+      hours: 2,
+      placeName: "Antrim Park lot",
+      addressLine1: "5800 Olentangy River Rd",
+      lat: 40.0806,
+      lng: -83.0327,
+      hideExactAddressUntilRsvp: false,
+      capacity: 15,
+      tags: ["cycling", "beginner-friendly"]
+    },
+    {
+      key: "crochetCircle",
+      hostId: users.kira_nakamura.id,
+      categoryId: categories.making,
+      title: "Beginner Crochet Circle",
+      slug: "beginner-crochet-circle",
+      description: "Hooks and yarn provided. Leave with a coaster, or at least a very confident knot.",
+      startsAt: daysFromNow(6),
+      hours: 2,
+      placeName: "Kira's studio",
+      addressLine1: "77 E Lane Ave",
+      lat: 40.0,
+      lng: -83.012,
+      capacity: 8,
+      tags: ["crafts", "beginner-friendly"]
+    },
+    {
+      key: "vinylNight",
+      hostId: users.priya_shah.id,
+      categoryId: categories.music,
+      title: "Vinyl Listening Night: '70s Soul",
+      slug: "vinyl-listening-night-70s-soul",
+      description: "Two full albums, start to finish, no phones. Snacks after side B.",
+      startsAt: daysFromNow(10),
+      hours: 3,
+      placeName: "Priya's living room",
+      addressLine1: "1290 Neil Ave",
+      lat: 39.99,
+      lng: -83.03,
+      capacity: 14,
+      allowGuests: true,
+      maxGuestsPerRsvp: 1,
+      tags: ["music", "listening"]
+    },
+    {
+      key: "triviaNight",
+      hostId: users.amir_haddad.id,
+      categoryId: categories.games,
+      title: "Trivia Tuesday at the Taproom",
+      slug: "trivia-tuesday-taproom",
+      description: "Teams of up to four. Bring friends or get adopted by a team on the night.",
+      startsAt: daysFromNow(13),
+      hours: 2,
+      placeName: "Short North Taproom",
+      addressLine1: "900 N High St",
+      lat: 39.9795,
+      lng: -83.0035,
+      hideExactAddressUntilRsvp: false,
+      capacity: 24,
+      allowGuests: true,
+      maxGuestsPerRsvp: 3,
+      tags: ["trivia", "bar"]
+    },
+    {
+      key: "gardenDay",
+      hostId: users.lena_fox.id,
+      categoryId: categories.outdoors,
+      title: "Community Garden Work Day",
+      slug: "community-garden-work-day",
+      description: "Weeding, mulching, and putting the beds to sleep for winter. Gloves provided.",
+      startsAt: daysFromNow(24),
+      hours: 4,
+      placeName: "Weinland Park Community Garden",
+      addressLine1: "1300 N 5th St",
+      lat: 39.9885,
+      lng: -82.9965,
+      hideExactAddressUntilRsvp: false,
+      capacity: 30,
+      tags: ["volunteering", "outdoor"]
     }
   ];
 
@@ -793,6 +902,40 @@ async function seedRsvpsAndAttendance(users, events) {
     await createRsvp(events.unlistedBirthday, users[handle], { respondedDaysBeforeStart: 4 });
   }
 
+  // ---- DEMO EXTRAS ----------------------------------------------------------
+  // Maya's bonfire is over but unreviewed: going RSVPs, no attendance rows.
+  // Signed in as Maya, this is where "mark who came" is demonstrated.
+  for (const handle of ["devon_park", "kira_nakamura", "sam_reyes", "ruth_okafor", "jonah_webb"]) {
+    await createRsvp(events.bonfireRecent, users[handle], { respondedDaysBeforeStart: 6 });
+  }
+
+  for (const handle of ["amir_haddad", "lena_fox", "maya_ortiz", "cal_dunn"]) {
+    await createRsvp(events.bikeLoop, users[handle], { respondedDaysBeforeStart: 3 });
+  }
+
+  // Five of eight seats, so the "3 spots left" urgency label shows on the card.
+  for (const handle of ["priya_shah", "ruth_okafor", "maya_ortiz", "nina_castro", "jonah_webb"]) {
+    await createRsvp(events.crochetCircle, users[handle], { respondedDaysBeforeStart: 4 });
+  }
+
+  for (const handle of ["kira_nakamura", "theo_bright", "devon_park", "ruth_okafor"]) {
+    await createRsvp(events.vinylNight, users[handle], {
+      respondedDaysBeforeStart: 5,
+      guestCount: handle === "theo_bright" ? 1 : 0
+    });
+  }
+
+  for (const handle of ["devon_park", "sam_reyes", "jonah_webb", "priya_shah", "maya_ortiz"]) {
+    await createRsvp(events.triviaNight, users[handle], {
+      respondedDaysBeforeStart: 7,
+      guestCount: handle === "devon_park" ? 3 : 0
+    });
+  }
+
+  for (const handle of ["cal_dunn", "ruth_okafor", "amir_haddad"]) {
+    await createRsvp(events.gardenDay, users[handle], { respondedDaysBeforeStart: 10 });
+  }
+
   // The cancelled hike still has RSVPs — the event died, not the intent.
   // Nobody is penalized for a host cancellation.
   for (const handle of ["lena_fox", "amir_haddad", "maya_ortiz"]) {
@@ -1085,7 +1228,24 @@ async function computeHostReputation() {
 // ---------------------------------------------------------------------------
 // Run
 // ---------------------------------------------------------------------------
+/**
+ * The seed WIPES every table before refilling it. That's what you want on a
+ * laptop and a disaster on a live database with real accounts in it, so in
+ * production it refuses to run unless ALLOW_SEED=true is set for that one run.
+ */
+function assertSeedAllowed() {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_SEED !== "true") {
+    console.log(
+      "Skipping seed: NODE_ENV is production and ALLOW_SEED is not \"true\". " +
+        "The seed deletes all data first, so it only runs when explicitly allowed."
+    );
+    process.exit(0);
+  }
+}
+
 async function main() {
+  assertSeedAllowed();
+
   console.log("Resetting…");
   await reset();
 

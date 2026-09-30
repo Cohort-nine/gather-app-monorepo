@@ -14,7 +14,8 @@ const prismaMock = {
     update: vi.fn(),
     updateMany: vi.fn(),
     count: vi.fn(),
-    findMany: vi.fn()
+    findMany: vi.fn(),
+    aggregate: vi.fn()
   },
   rsvpStatusEvent: { create: vi.fn() },
   notification: { create: vi.fn() },
@@ -42,7 +43,16 @@ function mockRes() {
 beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.$transaction.mockImplementation(async (cb) => cb(prismaMock));
+  seats(0);
 });
+
+/** How many seats 'going' RSVPs (people + their guests) already occupy. */
+function seats(people, guests = 0) {
+  prismaMock.rsvp.aggregate.mockResolvedValue({
+    _count: { _all: people },
+    _sum: { guestCount: guests }
+  });
+}
 
 describe("createOrUpdateRsvp", () => {
   const baseEvent = {
@@ -55,7 +65,6 @@ describe("createOrUpdateRsvp", () => {
     maxGuestsPerRsvp: 3,
     allowWaitlist: true,
     capacity: 2,
-    _count: { rsvps: 0 }
   };
 
   const req = (overrides = {}) => ({
@@ -66,7 +75,7 @@ describe("createOrUpdateRsvp", () => {
   });
 
   it("confirms 'going' when the event has room", async () => {
-    prismaMock.event.findUnique.mockResolvedValue({ ...baseEvent, _count: { rsvps: 0 } });
+    prismaMock.event.findUnique.mockResolvedValue(baseEvent);
     prismaMock.userBlock.findFirst.mockResolvedValue(null);
     prismaMock.rsvp.findUnique.mockResolvedValue(null);
     prismaMock.rsvp.create.mockResolvedValue({ id: "rsvp-1", status: "going" });
@@ -81,7 +90,8 @@ describe("createOrUpdateRsvp", () => {
   });
 
   it("waitlists once capacity is reached instead of rejecting outright", async () => {
-    prismaMock.event.findUnique.mockResolvedValue({ ...baseEvent, _count: { rsvps: 2 } });
+    prismaMock.event.findUnique.mockResolvedValue(baseEvent);
+    seats(2);
     prismaMock.userBlock.findFirst.mockResolvedValue(null);
     prismaMock.rsvp.findUnique.mockResolvedValue(null);
     prismaMock.rsvp.findFirst.mockResolvedValue(null); // nobody else on the waitlist yet
@@ -100,9 +110,9 @@ describe("createOrUpdateRsvp", () => {
   it("rejects when full and the host disabled the waitlist", async () => {
     prismaMock.event.findUnique.mockResolvedValue({
       ...baseEvent,
-      allowWaitlist: false,
-      _count: { rsvps: 2 }
+      allowWaitlist: false
     });
+    seats(2);
     prismaMock.userBlock.findFirst.mockResolvedValue(null);
     prismaMock.rsvp.findUnique.mockResolvedValue(null);
 
@@ -111,6 +121,23 @@ describe("createOrUpdateRsvp", () => {
 
     expect(res.status).toHaveBeenCalledWith(409);
     expect(prismaMock.rsvp.create).not.toHaveBeenCalled();
+  });
+
+  it("counts guests toward capacity, not just RSVP rows", async () => {
+    // One person is going with a guest: both seats of a two-seat event are taken.
+    prismaMock.event.findUnique.mockResolvedValue(baseEvent);
+    seats(1, 1);
+    prismaMock.userBlock.findFirst.mockResolvedValue(null);
+    prismaMock.rsvp.findUnique.mockResolvedValue(null);
+    prismaMock.rsvp.findFirst.mockResolvedValue(null);
+    prismaMock.rsvp.create.mockResolvedValue({ id: "rsvp-3", status: "waitlisted" });
+
+    const res = mockRes();
+    await createOrUpdateRsvp(req(), res, vi.fn());
+
+    expect(prismaMock.rsvp.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: "waitlisted" }) })
+    );
   });
 
   it("blocks a host from RSVPing to their own event", async () => {
@@ -160,7 +187,7 @@ describe("cancelRsvp", () => {
       waitlistPosition: null
     });
     prismaMock.rsvp.update.mockResolvedValue({ id: "rsvp-going", status: "cancelled" });
-    prismaMock.rsvp.count.mockResolvedValue(0); // the cancellation just freed the only seat
+    seats(0); // the cancellation just freed the only seat
     prismaMock.rsvp.findMany.mockResolvedValue([
       {
         id: "rsvp-waiting",
@@ -201,7 +228,7 @@ describe("cancelRsvp", () => {
       waitlistPosition: null
     });
     prismaMock.rsvp.update.mockResolvedValue({ id: "rsvp-going", status: "cancelled" });
-    prismaMock.rsvp.count.mockResolvedValue(0);
+    seats(0);
     prismaMock.rsvp.findMany.mockResolvedValue([
       {
         id: "rsvp-waiting",
@@ -218,6 +245,49 @@ describe("cancelRsvp", () => {
     expect(prismaMock.rsvp.update).toHaveBeenCalledTimes(1);
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ promotedFromWaitlist: null }) })
+    );
+  });
+
+  it("skips a waitlisted person whose guests wouldn't fit and promotes the next one who does", async () => {
+    prismaMock.event.findUnique.mockResolvedValue({
+      id: EVENT_ID,
+      capacity: 1,
+      startsAt: futureDate(72),
+      waitlistReliabilityFloor: 0
+    });
+    prismaMock.rsvp.findUnique.mockResolvedValue({
+      id: "rsvp-going",
+      status: "going",
+      waitlistPosition: null
+    });
+    prismaMock.rsvp.update.mockResolvedValue({ id: "rsvp-going", status: "cancelled" });
+    seats(0);
+    prismaMock.rsvp.findMany.mockResolvedValue([
+      {
+        id: "rsvp-with-guests",
+        userId: "55555555-5555-5555-5555-555555555555",
+        waitlistPosition: 1,
+        guestCount: 2,
+        user: { reliability: { score: 1 } }
+      },
+      {
+        id: "rsvp-solo",
+        userId: WAITLISTED_USER_ID,
+        waitlistPosition: 2,
+        guestCount: 0,
+        user: { reliability: { score: 1 } }
+      }
+    ]);
+
+    const res = mockRes();
+    await cancelRsvp(req(), res, vi.fn());
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          promotedFromWaitlist: { rsvpId: "rsvp-solo", userId: WAITLISTED_USER_ID }
+        })
+      })
     );
   });
 });

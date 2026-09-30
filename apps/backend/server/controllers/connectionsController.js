@@ -429,6 +429,20 @@ export async function listMyFriendsEvents(req, res, next) {
       }
     });
 
+    // Seats (people + their guests) per event, so spotsLeft means the same
+    // thing here as on the browse grid.
+    const seatRows = events.length
+      ? await prisma.rsvp.groupBy({
+          by: ["eventId"],
+          where: { eventId: { in: events.map((e) => e.id) }, status: "going" },
+          _count: { _all: true },
+          _sum: { guestCount: true }
+        })
+      : [];
+    const seatsByEvent = new Map(
+      seatRows.map((row) => [row.eventId, row._count._all + (row._sum.guestCount ?? 0)])
+    );
+
     const data = events.map((e) => ({
       id: e.id,
       title: e.title,
@@ -446,8 +460,9 @@ export async function listMyFriendsEvents(req, res, next) {
       status: e.status,
       imageUrl: e.imageUrl,
       goingCount: e._count.rsvps,
-      spotsLeft: e.capacity === null ? null : Math.max(0, e.capacity - e._count.rsvps),
-      isFull: e.capacity !== null && e._count.rsvps >= e.capacity,
+      spotsLeft:
+        e.capacity === null ? null : Math.max(0, e.capacity - (seatsByEvent.get(e.id) ?? 0)),
+      isFull: e.capacity !== null && (seatsByEvent.get(e.id) ?? 0) >= e.capacity,
       host: {
         id: e.host.id,
         handle: e.host.handle,

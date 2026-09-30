@@ -148,7 +148,9 @@ export async function listEvents(req, res, next) {
         COALESCE(hr.score, 0)::float8            AS "hostRating",
         COALESCE(hr.rating_count, 0)::int        AS "hostRatingCount",
         COUNT(r.id) FILTER (WHERE r.status = 'going')::int      AS going_count,
-        COUNT(r.id) FILTER (WHERE r.status = 'waitlisted')::int AS waitlist_count
+        COUNT(r.id) FILTER (WHERE r.status = 'waitlisted')::int AS waitlist_count,
+        -- Capacity is a headcount: each 'going' RSVP takes 1 seat plus its guests.
+        COALESCE(SUM(1 + r.guest_count) FILTER (WHERE r.status = 'going'), 0)::int AS seats_taken
       FROM events e
       JOIN      users           u  ON u.id      = e.host_id
       LEFT JOIN categories      c  ON c.id      = e.category_id
@@ -192,8 +194,8 @@ export async function listEvents(req, res, next) {
       hideExactAddress: r.hideExactAddress,
       goingCount: r.going_count,
       waitlistCount: r.waitlist_count,
-      spotsLeft: r.capacity === null ? null : Math.max(0, r.capacity - r.going_count),
-      isFull: r.capacity !== null && r.going_count >= r.capacity,
+      spotsLeft: r.capacity === null ? null : Math.max(0, r.capacity - r.seats_taken),
+      isFull: r.capacity !== null && r.seats_taken >= r.capacity,
       host: {
         id: r.hostId,
         handle: r.hostHandle,
@@ -327,11 +329,18 @@ export async function getEvent(req, res, next) {
       }
     });
 
-    if (!event) {
+    // Drafts are private to the people running the event. A 404 rather than a
+    // 403, so a draft's existence isn't confirmed to someone guessing ids.
+    const viewerId = req.user?.id ?? null;
+    const canManage =
+      Boolean(viewerId) &&
+      (event?.hostId === viewerId || (event?.cohosts ?? []).some((c) => c.userId === viewerId));
+    if (!event || (event.status === "draft" && !canManage)) {
       return res.status(404).json({ message: "Event not found" });
     }
 
     const going = event.rsvps.filter((r) => r.status === "going");
+    const seats = going.reduce((sum, r) => sum + 1 + r.guestCount, 0);
 
     // Respect each attendee's privacy setting. Someone set to 'nobody' is
     // counted but not named — the count stays honest without exposing them.
@@ -349,7 +358,7 @@ export async function getEvent(req, res, next) {
     // optionalAuth means req.user is present for signed-in visitors and absent
     // for anonymous ones. Both are valid here — the difference is how much of
     // the address they get back.
-    const visible = applyAddressPrivacy(event, req.user?.id ?? null, event.rsvps);
+    const visible = applyAddressPrivacy(event, viewerId, event.rsvps);
 
     res.json({
       message: "Event retrieved successfully",
@@ -359,8 +368,8 @@ export async function getEvent(req, res, next) {
         tags: event.tags.map((t) => t.tag),
         goingCount: going.length,
         waitlistCount: event.rsvps.filter((r) => r.status === "waitlisted").length,
-        spotsLeft: event.capacity === null ? null : Math.max(0, event.capacity - going.length),
-        isFull: event.capacity !== null && going.length >= event.capacity,
+        spotsLeft: event.capacity === null ? null : Math.max(0, event.capacity - seats),
+        isFull: event.capacity !== null && seats >= event.capacity,
         attendees: visibleAttendees,
         hiddenAttendeeCount: going.length - visibleAttendees.length,
         waitlist: event.rsvps
@@ -435,11 +444,6 @@ export async function updateEvent(req, res, next) {
     return res.status(400).json({ message: "id must be a valid UUID" });
   }
 
-  const existing = await prisma.event.findUnique({ where: { id } });
-  if (!existing) {
-    return res.status(404).json({ message: "Event not found" });
-  }
-
   // hostId is stripped: ownership transfer is not something a plain edit should
   // be able to do, even for the real host.
   const { hostId: _ignored, ...body } = req.body;
@@ -449,22 +453,27 @@ export async function updateEvent(req, res, next) {
     return res.status(400).json({ message: "Validation failed", errors });
   }
 
-  // A partial update can still break a cross-field rule — a new endsAt has to
-  // be checked against the STORED startsAt, not just whatever was sent.
-  const startsAt = data.startsAt ?? existing.startsAt;
-  const endsAt = data.endsAt ?? existing.endsAt;
-  if (endsAt && endsAt <= startsAt) {
-    return res.status(400).json({
-      message: "Validation failed",
-      errors: ["endsAt must be after startsAt"]
-    });
-  }
-
   if (!Object.keys(data).length) {
     return res.status(400).json({ message: "No valid fields to update" });
   }
 
   try {
+    const existing = await prisma.event.findUnique({ where: { id } });
+    if (!existing) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    // A partial update can still break a cross-field rule — a new endsAt has to
+    // be checked against the STORED startsAt, not just whatever was sent.
+    const startsAt = data.startsAt ?? existing.startsAt;
+    const endsAt = data.endsAt ?? existing.endsAt;
+    if (endsAt && endsAt <= startsAt) {
+      return res.status(400).json({
+        message: "Validation failed",
+        errors: ["endsAt must be after startsAt"]
+      });
+    }
+
     const event = await prisma.event.update({
       where: { id },
       data,
