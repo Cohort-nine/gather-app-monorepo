@@ -99,7 +99,7 @@ empty states, error messages, and confirmation before anything destructive.
   constraints, partial indexes, and view Prisma can't express
 - **Testing** — Vitest
 - **Infrastructure** — Vercel (frontend), Render (backend), Supabase (database),
-  GitHub Actions (CI + auto-deploy), Doppler (shared secrets), Docker Compose
+  GitHub Actions (CI), Doppler (shared secrets), Docker Compose
   (local Postgres)
 
 ## Planning documents
@@ -442,9 +442,11 @@ Both halves deploy automatically on every push to `main`:
 - **Backend → Render.** Render watches `main`. Build command
   `cd apps/backend && npm ci && npx prisma migrate deploy`, start command
   `cd apps/backend && npm start`. New migrations apply on deploy.
-- **Frontend → Vercel.** The `deploy-frontend` job in
-  `.github/workflows/ci.yml` builds and deploys once tests pass. It needs one
-  repository secret, `VERCEL_TOKEN`, created at vercel.com/account/tokens.
+- **Frontend → Vercel.** The Vercel project is connected to this repository
+  (root directory `apps/frontend`) and builds `main` on every push.
+  `VITE_API_BASE_URL` is set in the Vercel project's environment variables.
+- **CI** (`.github/workflows/ci.yml`) runs the backend tests and a frontend
+  build on every push and pull request.
 
 **Seeding production.** `prisma/seed.js` deletes everything before it
 inserts, so with `NODE_ENV=production` it refuses to run unless `ALLOW_SEED=true`

@@ -1073,7 +1073,7 @@ async function seedEngagement(users, events, badges) {
         eventId: events.potluckNext.id,
         channel: "in_app",
         type: "rsvp_confirmed",
-        title: "You're going to Third Thursday Potluck — Summer",
+        title: "You're going to Third Thursday Potluck — Soup Night",
         body: "Maya will share the exact address 12 hours before.",
         sentAt: daysFromNow(-3),
         readAt: daysFromNow(-3)
