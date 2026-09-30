@@ -1,0 +1,68 @@
+name: Live smoke test
+
+# Checks the deployed app end to end, from outside: the API answers, a demo
+# account can sign in, and the live frontend's origin is allowed by CORS.
+# Runs daily (so a broken deploy or an expired database is noticed before a
+# recruiter clicks the link), on demand, and whenever this file changes.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 12 * * *"
+  push:
+    branches: [main]
+    paths: [".github/workflows/smoke.yml"]
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      API: https://gather-api-07it.onrender.com/api
+      SITE: https://gather-app-juan.vercel.app
+    steps:
+      # The API is on Render's free tier and sleeps when idle. Give it up to
+      # two minutes to wake before judging anything.
+      - name: Wake the API
+        run: |
+          for i in $(seq 1 24); do
+            if curl -fsS "$API/health" | grep -q '"ok"'; then echo "API is up"; exit 0; fi
+            echo "waiting for API ($i)"; sleep 5
+          done
+          echo "::error::API did not respond within 2 minutes"; exit 1
+
+      - name: Frontend serves the app and link-preview tags
+        run: |
+          html=$(curl -fsS "$SITE/")
+          echo "$html" | grep -q 'og:image' || { echo "::error::og:image tag missing"; exit 1; }
+          curl -fsS -o /dev/null "$SITE/og-image.jpg"
+          js=$(echo "$html" | grep -o '/assets/index-[^"]*\.js' | head -1)
+          curl -fsS "$SITE$js" | grep -q 'gather-api-07it.onrender.com' \
+            || { echo "::error::frontend bundle does not point at the API"; exit 1; }
+          echo "Frontend OK ($js)"
+
+      - name: Browse events
+        run: |
+          total=$(curl -fsS "$API/events?limit=1" | jq '.meta.total')
+          echo "Upcoming public events: $total"
+          [ "$total" -gt 0 ] || { echo "::error::no events returned"; exit 1; }
+
+      - name: Demo login works and CORS allows the live site
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$API/auth/login" \
+            -H "Origin: $SITE" -H "Access-Control-Request-Method: POST" \
+            -H "Access-Control-Request-Headers: content-type")
+          allow=$(curl -s -D - -o /dev/null -X OPTIONS "$API/auth/login" \
+            -H "Origin: $SITE" -H "Access-Control-Request-Method: POST" \
+            | tr -d '\r' | grep -i '^access-control-allow-origin:' | cut -d' ' -f2)
+          echo "Preflight: $code, allow-origin: $allow"
+          [ "$allow" = "$SITE" ] || { echo "::error::CORS does not allow $SITE"; exit 1; }
+
+          token=$(curl -fsS -X POST "$API/auth/login" -H "Origin: $SITE" \
+            -H 'content-type: application/json' \
+            -d '{"identifier":"maya_ortiz","password":"gather-demo-2026"}' | jq -r '.data.token')
+          [ ${#token} -gt 20 ] || { echo "::error::demo login failed"; exit 1; }
+
+          mine=$(curl -fsS "$API/events?mine=true&limit=50" -H "Authorization: Bearer $token" | jq '.meta.total')
+          echo "maya_ortiz hosts $mine event(s)"
+          [ "$mine" -gt 0 ] || { echo "::error::demo host has no events"; exit 1; }
